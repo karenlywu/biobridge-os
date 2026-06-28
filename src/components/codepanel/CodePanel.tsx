@@ -4,7 +4,7 @@ import { generatePythonScript } from '../../lib/codegen/generatePythonScript';
 import { Button } from '../shared/Button';
 import { downloadTextFile } from '../../lib/utils';
 
-export function CodePanel() {
+export function CodePanel({ embedded = false }: { embedded?: boolean }) {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const actionHistory = useBioBridgeStore((s) => s.actionHistory);
 
@@ -14,9 +14,17 @@ export function CodePanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-850 shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-700 px-4 py-2">
-        <h3 className="text-sm font-semibold text-white">Generated Python</h3>
+    <div
+      className={
+        embedded
+          ? 'overflow-hidden bg-slate-850'
+          : 'overflow-hidden rounded-xl border border-slate-200 bg-slate-850 shadow-sm'
+      }
+    >
+      <div
+        className={`flex items-center border-b border-slate-700 px-4 py-2 ${embedded ? 'justify-end' : 'justify-between'}`}
+      >
+        {!embedded && <h3 className="text-sm font-semibold text-white">Generated Python</h3>}
         <Button
           variant="secondary"
           onClick={() => downloadTextFile(script, 'biobridge_clean.py', 'text/x-python')}

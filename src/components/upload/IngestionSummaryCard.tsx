@@ -1,7 +1,7 @@
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import { LARGE_FILE_THRESHOLD } from '../../lib/utils';
 
-export function IngestionSummaryCard() {
+export function IngestionSummaryCard({ embedded = false }: { embedded?: boolean }) {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
@@ -17,7 +17,7 @@ export function IngestionSummaryCard() {
   ).length;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className={embedded ? '' : 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm'}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="font-semibold text-slate-900">{dataset.sourceFileName}</h3>

@@ -3,13 +3,19 @@ import { auditTrailToCsv } from '../../lib/audit/auditLogger';
 import { Button } from '../shared/Button';
 import { downloadTextFile } from '../../lib/utils';
 
-export function AuditTrailPanel() {
+export function AuditTrailPanel({ embedded = false }: { embedded?: boolean }) {
   const auditTrail = useBioBridgeStore((s) => s.auditTrail);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
-        <h3 className="text-sm font-semibold text-slate-800">Audit Trail</h3>
+    <div
+      className={
+        embedded ? 'overflow-hidden bg-white' : 'rounded-xl border border-slate-200 bg-white shadow-sm'
+      }
+    >
+      <div
+        className={`flex items-center border-b border-slate-200 px-4 py-2 ${embedded ? 'justify-end' : 'justify-between'}`}
+      >
+        {!embedded && <h3 className="text-sm font-semibold text-slate-800">Audit Trail</h3>}
         <div className="flex gap-2">
           <Button
             variant="secondary"

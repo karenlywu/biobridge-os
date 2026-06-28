@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 
-export function CostOfCleaningSummary() {
+export function CostOfCleaningSummary({ embedded = false }: { embedded?: boolean }) {
   const auditTrail = useBioBridgeStore((s) => s.auditTrail);
 
   const stats = useMemo(() => {
@@ -25,9 +25,9 @@ export function CostOfCleaningSummary() {
   if (!stats.count) return null;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-800">Cost of Cleaning</h3>
-      <p className="mt-1 text-xs text-slate-500">
+    <div className={embedded ? '' : 'rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm'}>
+      {!embedded && <h3 className="text-sm font-semibold text-slate-800">Cost of Cleaning</h3>}
+      <p className={`text-xs text-slate-500 ${embedded ? '' : 'mt-1'}`}>
         Data cleaning is often 50–60% of comp-bio time but invisible in project plans. This makes
         that effort measurable. Token cost is estimated (demo proxy).
       </p>

@@ -63,7 +63,7 @@ function SuggestionRow({
   );
 }
 
-export function SuggestionsPanel() {
+export function SuggestionsPanel({ embedded = false }: { embedded?: boolean }) {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const flags = useBioBridgeStore((s) => s.anomalyFlags);
   const protocols = useBioBridgeStore((s) => s.protocols);
@@ -75,6 +75,13 @@ export function SuggestionsPanel() {
   const [bulkComplete, setBulkComplete] = useState<{ applied: number } | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+
+  const successShell = embedded
+    ? 'rounded-lg border border-emerald-200 bg-emerald-50/80 p-4'
+    : 'rounded-xl border border-emerald-300 bg-emerald-50 p-4 shadow-sm';
+  const mainShell = embedded
+    ? ''
+    : 'rounded-xl border border-brand-200 bg-gradient-to-br from-brand-50 to-white p-4 shadow-sm';
 
   useEffect(() => {
     setBulkComplete(null);
@@ -124,7 +131,7 @@ export function SuggestionsPanel() {
     return (
       <div
         role="status"
-        className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 shadow-sm"
+        className={successShell}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -156,7 +163,7 @@ export function SuggestionsPanel() {
     return (
       <div
         role="status"
-        className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 shadow-sm"
+        className={successShell}
       >
         <p className="font-semibold text-emerald-900">
           ✓ Applied {bulkComplete.applied} safe fix{bulkComplete.applied !== 1 ? 'es' : ''} — all
@@ -170,7 +177,7 @@ export function SuggestionsPanel() {
   }
 
   return (
-    <div className="rounded-xl border border-brand-200 bg-gradient-to-br from-brand-50 to-white p-4 shadow-sm">
+    <div className={mainShell}>
       {bulkComplete && (
         <div
           role="status"
@@ -185,8 +192,8 @@ export function SuggestionsPanel() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-slate-900">Suggested fixes</h3>
-          <p className="text-sm text-slate-600">
+          {!embedded && <h3 className="font-semibold text-slate-900">Suggested fixes</h3>}
+          <p className={`text-sm text-slate-600 ${embedded ? '' : ''}`}>
             {suggestions.length} recommendation{suggestions.length !== 1 ? 's' : ''} —{' '}
             {autoCount} can be applied automatically
           </p>

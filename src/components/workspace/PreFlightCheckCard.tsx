@@ -5,7 +5,7 @@ import type { AnomalyType } from '../../types/anomaly';
 import { getNotesColumns, getBatchColumn } from '../../lib/parsing/enrichDataset';
 import { buildSuggestions } from '../../lib/suggestions/buildSuggestions';
 
-export function PreFlightCheckCard() {
+export function PreFlightCheckCard({ embedded = false }: { embedded?: boolean }) {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const anomalyFlags = useBioBridgeStore((s) => s.anomalyFlags);
   const protocols = useBioBridgeStore((s) => s.protocols);
@@ -38,9 +38,16 @@ export function PreFlightCheckCard() {
 
   const protocol = protocols.find((p) => p.id === activeProtocolId);
 
+  const cleanShell = embedded
+    ? 'rounded-lg bg-emerald-50/80 p-4'
+    : 'rounded-xl border border-emerald-200 bg-emerald-50 p-4';
+  const warnShell = embedded
+    ? 'rounded-lg bg-amber-50/80 p-4'
+    : 'rounded-xl border border-amber-200 bg-amber-50 p-4';
+
   if (summary.isClean) {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+      <div className={cleanShell}>
         <p className="font-semibold text-emerald-900">Dataset is clean ✓</p>
         <p className="mt-1 text-sm text-emerald-800">
           No issues detected — safe to export and send to the computational team.
@@ -50,9 +57,11 @@ export function PreFlightCheckCard() {
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+    <div className={warnShell}>
       <p className="font-semibold text-amber-900">
-        Pre-flight check — {summary.total} issue{summary.total !== 1 ? 's' : ''} before you send
+        {embedded
+          ? `${summary.total} issue${summary.total !== 1 ? 's' : ''} before you send`
+          : `Pre-flight check — ${summary.total} issue${summary.total !== 1 ? 's' : ''} before you send`}
       </p>
       <p className="mt-1 text-sm text-amber-800">
         {activePersonaId === 'elena'

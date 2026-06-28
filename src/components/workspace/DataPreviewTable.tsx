@@ -1,7 +1,7 @@
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import { PREVIEW_ROW_LIMIT, LARGE_FILE_THRESHOLD } from '../../lib/utils';
 
-export function DataPreviewTable() {
+export function DataPreviewTable({ embedded = false }: { embedded?: boolean }) {
   const dataset = useBioBridgeStore((s) => s.dataset);
 
   if (!dataset) return null;
@@ -12,16 +12,28 @@ export function DataPreviewTable() {
       : dataset.rows;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-4 py-2">
-        <h3 className="text-sm font-semibold text-slate-800">Data preview</h3>
-        {dataset.rowCount > LARGE_FILE_THRESHOLD && (
-          <p className="text-xs text-amber-700">
-            Showing first {PREVIEW_ROW_LIMIT.toLocaleString()} of{' '}
-            {dataset.rowCount.toLocaleString()} rows
-          </p>
-        )}
-      </div>
+    <div
+      className={
+        embedded ? 'overflow-hidden' : 'overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm'
+      }
+    >
+      {!embedded && (
+        <div className="border-b border-slate-200 px-4 py-2">
+          <h3 className="text-sm font-semibold text-slate-800">Data preview</h3>
+          {dataset.rowCount > LARGE_FILE_THRESHOLD && (
+            <p className="text-xs text-amber-700">
+              Showing first {PREVIEW_ROW_LIMIT.toLocaleString()} of{' '}
+              {dataset.rowCount.toLocaleString()} rows
+            </p>
+          )}
+        </div>
+      )}
+      {embedded && dataset.rowCount > LARGE_FILE_THRESHOLD && (
+        <p className="border-b border-slate-100 px-4 py-2 text-xs text-amber-700">
+          Showing first {PREVIEW_ROW_LIMIT.toLocaleString()} of{' '}
+          {dataset.rowCount.toLocaleString()} rows
+        </p>
+      )}
       <div className="max-h-64 overflow-auto">
         <table className="min-w-full text-left text-xs">
           <thead className="sticky top-0 bg-slate-50">
