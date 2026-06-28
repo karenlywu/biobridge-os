@@ -1,7 +1,7 @@
 # BioBridge OS : QBI Hackathon 2026 Project
 # Author: Karen Wu
-
-Bidirectional low-code data transformation for life sciences — clean messy wet-lab exports, generate reproducible Python scripts, and maintain a full audit trail.
+BioBridge OS is a low-code data transformation platform purpose-built for the handoff of experiment data between wet-lab biologists and computational biologists. 
+Safe space for wet-lab biologists to clean their messy exports with the built-in data rules their computational biologists have preset alongside an audit trail of who made what changes.
 
 **Stack:** React 18 + TypeScript, Vite, Tailwind CSS, Zustand, PapaParse, SheetJS
 
