@@ -18,6 +18,7 @@ import { AuditTrailPanel } from './components/audittrail/AuditTrailPanel';
 import { CostOfCleaningSummary } from './components/audittrail/CostOfCleaningSummary';
 import { HandoffReportPanel } from './components/audittrail/HandoffReportPanel';
 import { Button } from './components/shared/Button';
+import { CollapsibleSection } from './components/shared/CollapsibleSection';
 import { AdvancedModeToggle } from './components/workspace/AdvancedModeToggle';
 import { PersonaWelcomeBanner, PersonaUploadHint } from './components/shared/PersonaWelcome';
 import { UserSessionBadge } from './components/shared/UserSessionBadge';
@@ -130,9 +131,23 @@ function CleaningStudio() {
 export default function App() {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const auditTrail = useBioBridgeStore((s) => s.auditTrail);
+  const anomalyFlags = useBioBridgeStore((s) => s.anomalyFlags);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
   const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
+
+  const unresolvedCount = useMemo(
+    () => anomalyFlags.filter((f) => !f.resolved).length,
+    [anomalyFlags],
+  );
+
+  const activeProtocol = protocols.find((p) => p.id === activeProtocolId);
+  const showDataDictionary = Boolean(
+    dataset &&
+      activeProtocol?.columnRules.some((r) => r.description || r.units),
+  );
+  const showCostSummary = auditTrail.length > 0;
+  const showHandoffReport = Boolean(dataset && auditTrail.length > 0);
 
   return (
     <div className="min-h-svh bg-slate-100">
@@ -183,7 +198,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 lg:px-6">
+      <main className="mx-auto max-w-7xl space-y-4 px-4 py-6 lg:px-6">
         {!dataset ? (
           <section>
             <PersonaWelcomeBanner />
@@ -195,19 +210,86 @@ export default function App() {
           </section>
         ) : (
           <>
-            <PreFlightCheckCard />
-            <SuggestionsPanel />
-            <IngestionSummaryCard />
-            <DataDictionaryPanel />
-            <div className="grid gap-6 lg:grid-cols-2">
-              <DataPreviewTable />
-              <CleaningStudio />
+            <CollapsibleSection
+              title={activePersonaId === 'elena' ? 'Upload lab data' : 'Review lab export'}
+              subtitle={dataset.sourceFileName}
+              defaultOpen={false}
+            >
+              <p className="mb-3 text-sm text-slate-600">
+                Load a different file or demo dataset — your current session will be replaced.
+              </p>
+              <DropZone />
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Pre-flight check" defaultOpen variant="flush">
+              <PreFlightCheckCard />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Suggestions"
+              subtitle="Auto-fixes and recommended actions"
+              defaultOpen
+              variant="flush"
+              visible={unresolvedCount > 0}
+            >
+              <SuggestionsPanel />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Ingestion summary"
+              subtitle={`${dataset.rowCount.toLocaleString()} rows · ${dataset.columns.length} columns`}
+              defaultOpen
+              variant="flush"
+            >
+              <IngestionSummaryCard />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Data dictionary"
+              subtitle={activeProtocol?.name}
+              defaultOpen={false}
+              variant="flush"
+              visible={showDataDictionary}
+            >
+              <DataDictionaryPanel />
+            </CollapsibleSection>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <CollapsibleSection title="Data preview" defaultOpen variant="flush">
+                <DataPreviewTable />
+              </CollapsibleSection>
+              <CollapsibleSection title="Cleaning studio" defaultOpen variant="flush">
+                <CleaningStudio />
+              </CollapsibleSection>
             </div>
-            <CostOfCleaningSummary />
-            <HandoffReportPanel />
-            <div className="grid gap-6 lg:grid-cols-2">
-              <CodePanel />
-              <AuditTrailPanel />
+
+            <CollapsibleSection
+              title="Cost of cleaning"
+              subtitle="Human time and effort metrics"
+              defaultOpen={false}
+              variant="flush"
+              visible={showCostSummary}
+            >
+              <CostOfCleaningSummary />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Handoff report"
+              subtitle="Plain-language summary for the bench scientist"
+              defaultOpen={false}
+              variant="flush"
+              visible={showHandoffReport}
+            >
+              <HandoffReportPanel />
+            </CollapsibleSection>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <CollapsibleSection title="Generated Python" defaultOpen={false} variant="flush">
+                <CodePanel />
+              </CollapsibleSection>
+              <CollapsibleSection title="Audit trail" defaultOpen={false} variant="flush">
+                <AuditTrailPanel />
+              </CollapsibleSection>
             </div>
           </>
         )}
