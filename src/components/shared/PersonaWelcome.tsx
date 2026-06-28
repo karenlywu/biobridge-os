@@ -33,10 +33,7 @@ export function PersonaUploadHint() {
     return (
       <p className="mb-4 text-sm text-slate-600">
         Marcus set up the assay protocol for you — we&apos;ll check your file against it
-        automatically. Issues are explained in everyday language, not data-engineering jargon.{' '}
-        <span className="text-brand-600">
-          Live demo: load ⭐ Live demo (dirty handoff) from the gallery below.
-        </span>
+        automatically. Issues are explained in everyday language, not data-engineering jargon.
       </p>
     );
   }
@@ -44,10 +41,7 @@ export function PersonaUploadHint() {
   return (
     <p className="mb-4 text-sm text-slate-600">
       Load a file Elena would send — compare flag counts with and without an active protocol, edit
-      regex rules under <strong>Manage Protocols</strong>, and inspect the audit trail + script.{' '}
-      <span className="text-violet-700">
-        Try ⭐ Live demo (dirty handoff) with <strong>96-well viability screen v1</strong> selected.
-      </span>
+      regex rules under <strong>Manage Protocols</strong>, and inspect the audit trail + script.
     </p>
   );
 }

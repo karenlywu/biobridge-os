@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useBioBridgeStore } from './store/useBioBridgeStore';
 import { DropZone } from './components/upload/DropZone';
 import { ProtocolBuilder } from './components/protocol/ProtocolBuilder';
@@ -7,6 +7,7 @@ import { PromoteToProtocolPrompt } from './components/protocol/PromoteToProtocol
 import { Button } from './components/shared/Button';
 import { PersonaWelcomeBanner, PersonaUploadHint } from './components/shared/PersonaWelcome';
 import { UserSessionBadge } from './components/shared/UserSessionBadge';
+import { ConfirmDialog } from './components/shared/ConfirmDialog';
 import { WorkspacePanels } from './components/workspace/WorkspacePanels';
 import { datasetToCsv } from './lib/codegen/generatePythonScript';
 import { generateHandoffReport } from './lib/handoff/generateHandoffReport';
@@ -20,12 +21,28 @@ export default function App() {
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
   const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
 
+  const [exportConfirmOpen, setExportConfirmOpen] = useState(false);
+
   const unresolvedCount = useMemo(
     () => anomalyFlags.filter((f) => !f.resolved).length,
     [anomalyFlags],
   );
 
   const canExportHandoff = auditTrail.length > 0;
+
+  const exportCleanedCsv = () => {
+    if (!dataset) return;
+    downloadTextFile(
+      datasetToCsv(dataset),
+      `cleaned_${dataset.sourceFileName}`,
+      'text/csv',
+    );
+  };
+
+  const handleExportCsv = () => {
+    if (unresolvedCount > 0) setExportConfirmOpen(true);
+    else exportCleanedCsv();
+  };
 
   return (
     <div className="min-h-svh bg-slate-100">
@@ -61,13 +78,7 @@ export default function App() {
                       ? `${unresolvedCount} unresolved issue(s) will remain in export`
                       : undefined
                   }
-                  onClick={() =>
-                    downloadTextFile(
-                      datasetToCsv(dataset),
-                      `cleaned_${dataset.sourceFileName}`,
-                      'text/csv',
-                    )
-                  }
+                  onClick={handleExportCsv}
                 >
                   Export cleaned CSV
                 </Button>
@@ -114,6 +125,18 @@ export default function App() {
       </main>
 
       <PromoteToProtocolPrompt />
+
+      <ConfirmDialog
+        open={exportConfirmOpen}
+        title="Export with open issues?"
+        message={`${unresolvedCount} unresolved issue${unresolvedCount !== 1 ? 's' : ''} will remain in the exported CSV. Export anyway?`}
+        confirmLabel="Export anyway"
+        onConfirm={() => {
+          exportCleanedCsv();
+          setExportConfirmOpen(false);
+        }}
+        onCancel={() => setExportConfirmOpen(false)}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Dataset } from '../types/dataset';
+import type { CellValue } from '../types/dataset';
 import type { ProtocolTemplate } from '../types/protocol';
 import type { AnomalyFlag } from '../types/anomaly';
 import type { CleaningAction } from '../types/action';
@@ -13,6 +14,7 @@ import { buildSuggestions } from '../lib/suggestions/buildSuggestions';
 import { derivePromotionPair } from '../lib/promotion';
 import { STARTER_PROTOCOLS } from '../data/starterProtocol';
 import { generateId } from '../lib/utils';
+import { restoreActionOnDataset, type UndoRecord } from '../lib/reviewFix/undoAction';
 
 import type { PendingPromotion } from '../types/promotion';
 
@@ -30,6 +32,7 @@ interface BioBridgeState {
   currentActor: string;
   pendingPromotion: PendingPromotion | null;
   lastInteractionStart: number | null;
+  undoStack: UndoRecord[];
 
   loadDataset: (dataset: Dataset) => void;
   setActiveProtocol: (protocolId: string | null) => void;
@@ -46,6 +49,8 @@ interface BioBridgeState {
   rerunDetection: () => void;
   applySuggestion: (suggestion: CleaningSuggestion) => void;
   applyAllAutoSuggestions: () => number;
+  updateCellValue: (rowIndex: number, columnName: string, rawValue: string) => void;
+  undoLastChange: () => UndoRecord | null;
 }
 
 function getActiveProtocol(
@@ -91,6 +96,7 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
   currentActor: getPersona(DEFAULT_PERSONA_ID).displayName,
   pendingPromotion: null,
   lastInteractionStart: null,
+  undoStack: [],
 
   loadDataset: (dataset) => {
     const { protocols, activeProtocolId } = get();
@@ -105,6 +111,7 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
       actionHistory: silentActions,
       auditTrail: auditEntries,
       pendingPromotion: null,
+      undoStack: [],
     });
   },
 
@@ -124,6 +131,7 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
       actionHistory: silentActions,
       auditTrail: silentActions.map((a) => createAuditEntry(a, 0, 1)),
       pendingPromotion: null,
+      undoStack: [],
     });
   },
 
@@ -190,6 +198,10 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
       actionHistory: [...state.actionHistory, action],
       auditTrail: [...state.auditTrail, audit],
       pendingPromotion: null,
+      undoStack: [
+        ...state.undoStack,
+        { action, promoteVariant: { variant, columnName } },
+      ],
     }));
 
     get().rerunDetection();
@@ -220,6 +232,10 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
       anomalyFlags: updatedFlags,
       pendingPromotion,
       lastInteractionStart: null,
+      undoStack: [
+        ...get().undoStack,
+        { action, resolvedFlagId: flagId },
+      ],
     });
   },
 
@@ -329,5 +345,106 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
       }
     }
     return applied;
+  },
+
+  updateCellValue: (rowIndex, columnName, rawValue) => {
+    const { dataset, currentActor } = get();
+    if (!dataset || rowIndex < 0 || rowIndex >= dataset.rowCount) return;
+
+    const column = dataset.columns.find((c) => c.name === columnName);
+    const beforeValue = dataset.rows[rowIndex]?.[columnName] ?? null;
+
+    let afterValue: CellValue = rawValue.trim() === '' ? null : rawValue.trim();
+    if (column?.inferredType === 'numeric' && afterValue !== null) {
+      const parsed = Number(afterValue);
+      if (!Number.isNaN(parsed)) afterValue = parsed;
+    }
+
+    if (String(beforeValue ?? '') === String(afterValue ?? '')) return;
+
+    get().startInteraction();
+    const now = new Date().toISOString();
+    const action: CleaningAction = {
+      id: generateId('action'),
+      type: 'impute_value',
+      target: { columnName, rowIndices: [rowIndex] },
+      beforeValues: [beforeValue],
+      afterValue,
+      reason: 'Manual edit in data preview',
+      actor: currentActor,
+      timestampStart: now,
+      timestampEnd: now,
+    };
+    get().commitAction(action, 1);
+    set((state) => ({
+      undoStack: [...state.undoStack, { action }],
+    }));
+    get().rerunDetection();
+  },
+
+  undoLastChange: () => {
+    const {
+      undoStack,
+      dataset,
+      actionHistory,
+      auditTrail,
+      anomalyFlags,
+      protocols,
+      activeProtocolId,
+    } = get();
+    if (!undoStack.length || !dataset) return null;
+
+    const record = undoStack[undoStack.length - 1]!;
+    const { action, resolvedFlagId, promoteVariant } = record;
+
+    let updated = restoreActionOnDataset(dataset, action);
+
+    let qcFlaggedRows = updated.qcFlaggedRows ?? [];
+    if (action.type === 'flag_for_review' && action.target.rowIndices.length) {
+      qcFlaggedRows = qcFlaggedRows.filter(
+        (r) => !action.target.rowIndices.includes(r),
+      );
+    }
+
+    let nextProtocols = protocols;
+    if (promoteVariant && activeProtocolId) {
+      const { variant, columnName } = promoteVariant;
+      nextProtocols = protocols.map((p) => {
+        if (p.id !== activeProtocolId) return p;
+        return {
+          ...p,
+          columnRules: p.columnRules.map((rule) => {
+            if (rule.columnName !== columnName || !rule.knownVariants?.[variant]) {
+              return rule;
+            }
+            const knownVariants = { ...rule.knownVariants };
+            delete knownVariants[variant];
+            return { ...rule, knownVariants };
+          }),
+        };
+      });
+    }
+
+    let nextFlags = anomalyFlags;
+    if (resolvedFlagId) {
+      nextFlags = anomalyFlags.map((f) =>
+        f.id === resolvedFlagId ? { ...f, resolved: false } : f,
+      );
+    }
+
+    updated = { ...updated, qcFlaggedRows };
+
+    set({
+      dataset: updated,
+      protocols: nextProtocols,
+      anomalyFlags: nextFlags,
+      actionHistory: actionHistory.filter((a) => a.id !== action.id),
+      auditTrail: auditTrail.filter((a) => a.actionId !== action.id),
+      undoStack: undoStack.slice(0, -1),
+      pendingPromotion: null,
+    });
+
+    get().rerunDetection();
+    return record;
   },
 }));

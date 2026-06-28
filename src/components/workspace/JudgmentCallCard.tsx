@@ -74,7 +74,7 @@ export function JudgmentCallCard({ flag, hideAutoSuggestion = false }: JudgmentC
         </div>
       )}
       {suggestion && hideAutoSuggestion && suggestion.autoApplicable && (
-        <p className="mt-3 text-xs text-emerald-700">Auto-fix available in Suggestions above.</p>
+        <p className="mt-3 text-xs text-emerald-700">Auto-fix available on the Quick fixes tab.</p>
       )}
 
       <fieldset className="mt-3 space-y-2">

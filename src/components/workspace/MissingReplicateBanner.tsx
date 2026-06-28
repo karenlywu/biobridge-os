@@ -15,11 +15,11 @@ export function MissingReplicateBanner({ flag, onDismiss }: MissingReplicateBann
   return (
     <div
       role="alert"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3"
     >
       <div>
-        <p className="font-medium text-blue-900">{plain.cardTitle}</p>
-        <p className="text-sm text-blue-800">
+        <p className="font-medium text-amber-900">{plain.cardTitle}</p>
+        <p className="text-sm text-amber-800">
           {plain.cardDescription({ columnName: flag.columnName, rowCount: flag.affectedRowIndices.length })}
           {' '}
           Affected: {(flag.variantValues ?? []).join('; ') || flag.suggestedResolution}

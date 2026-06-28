@@ -2,10 +2,8 @@ import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import { DropZone } from '../upload/DropZone';
 import { IngestionSummaryCard } from '../upload/IngestionSummaryCard';
-import { DataPreviewTable } from './DataPreviewTable';
 import { PreFlightCheckCard } from './PreFlightCheckCard';
-import { SuggestionsPanel } from './SuggestionsPanel';
-import { CleaningStudio } from './CleaningStudio';
+import { ReviewFixPanel } from './ReviewFixPanel';
 import { DataDictionaryPanel } from '../protocol/DataDictionaryPanel';
 import { CodePanel } from '../codepanel/CodePanel';
 import { AuditTrailPanel } from '../audittrail/AuditTrailPanel';
@@ -38,16 +36,10 @@ export function WorkspacePanels() {
   );
   const [draggingId, setDraggingId] = useState<WorkspacePanelId | null>(null);
   const [dropTargetId, setDropTargetId] = useState<WorkspacePanelId | null>(null);
-  const [pinSuggestions, setPinSuggestions] = useState(false);
 
   useEffect(() => {
     setPanelOrder(loadPanelOrder(activePersonaId));
-    setPinSuggestions(false);
   }, [activePersonaId]);
-
-  useEffect(() => {
-    setPinSuggestions(false);
-  }, [dataset?.sourceFileName]);
 
   const unresolvedCount = useMemo(
     () => anomalyFlags.filter((f) => !f.resolved).length,
@@ -60,19 +52,17 @@ export function WorkspacePanels() {
     (): Record<WorkspacePanelId, boolean> => ({
       upload: true,
       preflight: true,
-      suggestions: unresolvedCount > 0 || pinSuggestions,
+      'review-fix': true,
       ingestion: true,
       dictionary: Boolean(
         activeProtocol?.columnRules.some((r) => r.description || r.units),
       ),
-      'data-preview': true,
-      'cleaning-studio': true,
       cost: auditTrail.length > 0,
       handoff: auditTrail.length > 0,
       python: true,
       audit: true,
     }),
-    [unresolvedCount, pinSuggestions, activeProtocol, auditTrail.length],
+    [activeProtocol, auditTrail.length],
   );
 
   const panelMeta = useMemo(
@@ -86,9 +76,12 @@ export function WorkspacePanels() {
         defaultOpen: false,
       },
       preflight: { title: 'Pre-flight check', defaultOpen: true },
-      suggestions: {
-        title: 'Suggestions',
-        subtitle: 'Auto-fixes and recommended actions',
+      'review-fix': {
+        title: 'Review & fix',
+        subtitle:
+          unresolvedCount > 0
+            ? `${unresolvedCount} open issue${unresolvedCount !== 1 ? 's' : ''} · quick fixes & judgment calls`
+            : 'Edit data inline · audit trail updates live',
         defaultOpen: true,
       },
       ingestion: {
@@ -103,8 +96,6 @@ export function WorkspacePanels() {
         subtitle: activeProtocol?.name,
         defaultOpen: false,
       },
-      'data-preview': { title: 'Data preview', defaultOpen: true },
-      'cleaning-studio': { title: 'Cleaning studio', defaultOpen: true },
       cost: {
         title: 'Cost of cleaning',
         subtitle: 'Human time and effort metrics',
@@ -118,7 +109,7 @@ export function WorkspacePanels() {
       python: { title: 'Generated Python', defaultOpen: false },
       audit: { title: 'Audit trail', defaultOpen: false },
     }),
-    [activePersonaId, dataset, activeProtocol?.name],
+    [activePersonaId, dataset, activeProtocol?.name, unresolvedCount],
   );
 
   const commitOrder = useCallback(
@@ -183,16 +174,8 @@ export function WorkspacePanels() {
             <PreFlightCheckCard embedded />
           </div>
         );
-      case 'suggestions':
-        return (
-          <div className="p-4">
-            <SuggestionsPanel
-              embedded
-              onBulkComplete={() => setPinSuggestions(true)}
-              onDismiss={() => setPinSuggestions(false)}
-            />
-          </div>
-        );
+      case 'review-fix':
+        return <ReviewFixPanel />;
       case 'ingestion':
         return (
           <div className="p-4">
@@ -203,14 +186,6 @@ export function WorkspacePanels() {
         return (
           <div className="p-4">
             <DataDictionaryPanel embedded />
-          </div>
-        );
-      case 'data-preview':
-        return <DataPreviewTable embedded />;
-      case 'cleaning-studio':
-        return (
-          <div className="p-4">
-            <CleaningStudio />
           </div>
         );
       case 'cost':

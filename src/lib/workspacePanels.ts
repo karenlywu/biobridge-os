@@ -1,15 +1,16 @@
 export type WorkspacePanelId =
   | 'upload'
   | 'preflight'
-  | 'suggestions'
+  | 'review-fix'
   | 'ingestion'
   | 'dictionary'
-  | 'data-preview'
-  | 'cleaning-studio'
   | 'cost'
   | 'handoff'
   | 'python'
   | 'audit';
+
+/** @deprecated Merged into review-fix — kept for localStorage migration */
+export type LegacyWorkspacePanelId = 'suggestions' | 'data-preview' | 'cleaning-studio';
 
 export type WorkspacePhaseId = 'understand' | 'fix' | 'handoff';
 
@@ -18,9 +19,7 @@ export const PANEL_PHASE: Record<WorkspacePanelId, WorkspacePhaseId> = {
   preflight: 'understand',
   ingestion: 'understand',
   dictionary: 'understand',
-  suggestions: 'fix',
-  'data-preview': 'fix',
-  'cleaning-studio': 'fix',
+  'review-fix': 'fix',
   cost: 'handoff',
   handoff: 'handoff',
   python: 'handoff',
@@ -36,11 +35,9 @@ export const PHASE_LABELS: Record<WorkspacePhaseId, string> = {
 export const DEFAULT_WORKSPACE_PANEL_ORDER: WorkspacePanelId[] = [
   'upload',
   'preflight',
-  'suggestions',
+  'review-fix',
   'ingestion',
   'dictionary',
-  'data-preview',
-  'cleaning-studio',
   'cost',
   'handoff',
   'python',
@@ -50,10 +47,8 @@ export const DEFAULT_WORKSPACE_PANEL_ORDER: WorkspacePanelId[] = [
 export const ELENA_DEFAULT_PANEL_ORDER: WorkspacePanelId[] = [
   'upload',
   'preflight',
-  'suggestions',
-  'cleaning-studio',
+  'review-fix',
   'ingestion',
-  'data-preview',
   'dictionary',
   'handoff',
   'cost',
@@ -65,15 +60,15 @@ export const MARCUS_DEFAULT_PANEL_ORDER: WorkspacePanelId[] = [
   'upload',
   'ingestion',
   'preflight',
-  'data-preview',
-  'cleaning-studio',
-  'suggestions',
+  'review-fix',
   'dictionary',
   'python',
   'audit',
   'cost',
   'handoff',
 ];
+
+const LEGACY_PANEL_IDS = new Set(['suggestions', 'data-preview', 'cleaning-studio']);
 
 function storageKey(personaId: string): string {
   return `biobridge-workspace-panel-order-${personaId}`;
@@ -84,11 +79,21 @@ function defaultOrderForPersona(personaId: string): WorkspacePanelId[] {
   return [...ELENA_DEFAULT_PANEL_ORDER];
 }
 
+function migratePanelId(id: string): WorkspacePanelId | null {
+  if (LEGACY_PANEL_IDS.has(id)) return 'review-fix';
+  if (DEFAULT_WORKSPACE_PANEL_ORDER.includes(id as WorkspacePanelId)) {
+    return id as WorkspacePanelId;
+  }
+  return null;
+}
+
 function normalizeOrder(parsed: unknown): WorkspacePanelId[] | null {
   if (!Array.isArray(parsed)) return null;
-  const valid = parsed.filter((id): id is WorkspacePanelId =>
-    DEFAULT_WORKSPACE_PANEL_ORDER.includes(id as WorkspacePanelId),
-  );
+  const valid: WorkspacePanelId[] = [];
+  for (const id of parsed) {
+    const mapped = migratePanelId(String(id));
+    if (mapped && !valid.includes(mapped)) valid.push(mapped);
+  }
   const missing = DEFAULT_WORKSPACE_PANEL_ORDER.filter((id) => !valid.includes(id));
   return [...valid, ...missing];
 }

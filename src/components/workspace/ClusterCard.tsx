@@ -92,7 +92,7 @@ export function ClusterCard({ flag, protocolName, hideAutoSuggestion = false }: 
         </div>
       )}
       {suggestion && hideAutoSuggestion && suggestion.autoApplicable && (
-        <p className="mb-3 text-xs text-emerald-700">Auto-fix available in Suggestions above.</p>
+        <p className="mb-3 text-xs text-emerald-700">Auto-fix available on the Quick fixes tab.</p>
       )}
 
       <div className="mb-3 flex flex-wrap gap-1">

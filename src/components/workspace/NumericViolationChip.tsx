@@ -92,7 +92,7 @@ export function NumericViolationChip({ flag, hideAutoSuggestion = false }: Numer
       )}
       {suggestion && hideAutoSuggestion && suggestion.autoApplicable && (
         <p className="mt-2 text-xs text-emerald-700">
-          Auto-fix available in Suggestions above.
+          Auto-fix available on the Quick fixes tab.
         </p>
       )}
 

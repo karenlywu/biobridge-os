@@ -110,17 +110,19 @@ function MappingRulesSection({
   const [draftMapsTo, setDraftMapsTo] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
   const [expanded, setExpanded] = useState(rules.length > 0);
+  const [draftError, setDraftError] = useState<string | null>(null);
 
   const addRule = () => {
     const variants = parseVariantList(draftVariants);
     if (!variants.length) {
-      window.alert('Add at least one variant spelling');
+      setDraftError('Add at least one variant spelling');
       return;
     }
     if (!draftMapsTo.trim()) {
-      window.alert('Maps-to canonical value is required');
+      setDraftError('Maps-to canonical value is required');
       return;
     }
+    setDraftError(null);
     onChange([
       ...rules,
       {
@@ -182,13 +184,19 @@ function MappingRulesSection({
                 <input
                   placeholder="Variants: drug_a, drug-a, DrugA"
                   value={draftVariants}
-                  onChange={(e) => setDraftVariants(e.target.value)}
+                  onChange={(e) => {
+                    setDraftError(null);
+                    setDraftVariants(e.target.value);
+                  }}
                   className="rounded border border-slate-300 px-2 py-1 text-sm font-mono"
                 />
                 <input
                   placeholder="Maps to (canonical)"
                   value={draftMapsTo}
-                  onChange={(e) => setDraftMapsTo(e.target.value)}
+                  onChange={(e) => {
+                    setDraftError(null);
+                    setDraftMapsTo(e.target.value);
+                  }}
                   className="rounded border border-slate-300 px-2 py-1 text-sm"
                 />
                 <input
@@ -198,6 +206,7 @@ function MappingRulesSection({
                   className="rounded border border-slate-300 px-2 py-1 text-sm"
                 />
               </div>
+              {draftError && <p className="mt-2 text-xs text-red-600">{draftError}</p>}
               <Button className="mt-2" variant="secondary" onClick={addRule}>
                 Add mapping rule
               </Button>
@@ -314,17 +323,19 @@ function RegexRulesSection({
   const [draft, setDraft] = useState<VariantRegexRule>({ pattern: '', mapsTo: '' });
   const [testInput, setTestInput] = useState(sampleValues.slice(0, 5).join(', '));
   const [expanded, setExpanded] = useState(rules.length > 0);
+  const [draftError, setDraftError] = useState<string | null>(null);
 
   const addRule = () => {
     const err = validateRegexPattern(draft.pattern);
     if (err) {
-      window.alert(err);
+      setDraftError(err);
       return;
     }
     if (!draft.mapsTo.trim()) {
-      window.alert('Maps-to canonical value is required');
+      setDraftError('Maps-to canonical value is required');
       return;
     }
+    setDraftError(null);
     onChange([...rules, { ...draft, pattern: draft.pattern.trim(), mapsTo: draft.mapsTo.trim() }]);
     setDraft({ pattern: '', mapsTo: '' });
   };
@@ -393,13 +404,19 @@ function RegexRulesSection({
                 <input
                   placeholder="Regex pattern"
                   value={draft.pattern}
-                  onChange={(e) => setDraft({ ...draft, pattern: e.target.value })}
+                  onChange={(e) => {
+                    setDraftError(null);
+                    setDraft({ ...draft, pattern: e.target.value });
+                  }}
                   className="rounded border border-slate-300 px-2 py-1 text-sm font-mono"
                 />
                 <input
                   placeholder="Maps to (canonical)"
                   value={draft.mapsTo}
-                  onChange={(e) => setDraft({ ...draft, mapsTo: e.target.value })}
+                  onChange={(e) => {
+                    setDraftError(null);
+                    setDraft({ ...draft, mapsTo: e.target.value });
+                  }}
                   className="rounded border border-slate-300 px-2 py-1 text-sm"
                 />
                 <input
@@ -409,6 +426,7 @@ function RegexRulesSection({
                   className="rounded border border-slate-300 px-2 py-1 text-sm"
                 />
               </div>
+              {draftError && <p className="mt-2 text-xs text-red-600">{draftError}</p>}
               <Button className="mt-2" variant="secondary" onClick={addRule}>
                 Add regex rule
               </Button>
@@ -581,7 +599,8 @@ export function ColumnRuleEditor({
                   },
                 })
               }
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              readOnly={readOnly}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 read-only:bg-slate-50"
             />
           </label>
           <label className="text-sm">
@@ -598,7 +617,8 @@ export function ColumnRuleEditor({
                   },
                 })
               }
-              className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              readOnly={readOnly}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 read-only:bg-slate-50"
             />
           </label>
         </div>
@@ -611,7 +631,8 @@ export function ColumnRuleEditor({
             value={rule.description ?? ''}
             onChange={(e) => onChange({ ...rule, description: e.target.value || undefined })}
             placeholder="e.g. Cycle threshold from instrument"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            readOnly={readOnly}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 read-only:bg-slate-50"
           />
         </label>
         <label className="block text-sm">
@@ -620,7 +641,8 @@ export function ColumnRuleEditor({
             value={rule.units ?? ''}
             onChange={(e) => onChange({ ...rule, units: e.target.value || undefined })}
             placeholder="e.g. µM, Ct, RLU, %"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            readOnly={readOnly}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 read-only:bg-slate-50"
           />
         </label>
       </div>
@@ -637,7 +659,8 @@ export function ColumnRuleEditor({
               expectedReplicateCount: e.target.value ? Number(e.target.value) : undefined,
             })
           }
-          className="mt-1 w-full max-w-xs rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          readOnly={readOnly}
+          className="mt-1 w-full max-w-xs rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 read-only:bg-slate-50"
         />
       </label>
 
@@ -652,16 +675,18 @@ export function ColumnRuleEditor({
                 <Chip>{variant}</Chip>
                 <span className="text-slate-400">→</span>
                 <Chip color="brand">{canonical}</Chip>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    const next = { ...rule.knownVariants };
-                    delete next[variant];
-                    onChange({ ...rule, knownVariants: next });
-                  }}
-                >
-                  Remove
-                </Button>
+                {!readOnly && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      const next = { ...rule.knownVariants };
+                      delete next[variant];
+                      onChange({ ...rule, knownVariants: next });
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
               </div>
             ))}
           </div>
