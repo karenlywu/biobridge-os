@@ -11,7 +11,18 @@ export const starterProtocol: ProtocolTemplate = {
       columnName: 'Treatment_Group',
       expectedType: 'categorical',
       allowedValues: ['Control', 'Drug A', 'Drug B', 'Drug C'],
-      knownVariants: { control: 'Control', vehicle: 'Control' },
+      variantMappingRules: [
+        {
+          variants: ['control', 'vehicle'],
+          mapsTo: 'Control',
+          label: 'Control spellings',
+        },
+        {
+          variants: ['drug_a', 'drug-a', 'DrugA'],
+          mapsTo: 'Drug A',
+          label: 'Drug A typos',
+        },
+      ],
       variantRegexRules: [
         { pattern: '^ctrl(_\\w+)?$', mapsTo: 'Control', label: 'ctrl* abbreviations' },
         { pattern: '^drug[\\s_-]?a', mapsTo: 'Drug A', label: 'Drug A typos' },
@@ -23,7 +34,10 @@ export const starterProtocol: ProtocolTemplate = {
       columnName: 'Gene_Symbol',
       expectedType: 'categorical',
       allowedValues: ['GAPDH', 'ACTB'],
-      knownVariants: { gapdh: 'GAPDH', actb: 'ACTB' },
+      variantMappingRules: [
+        { variants: ['gapdh'], mapsTo: 'GAPDH' },
+        { variants: ['actb'], mapsTo: 'ACTB' },
+      ],
       variantRegexRules: [
         {
           pattern: '^[a-zA-Z0-9]+$',
@@ -77,7 +91,7 @@ export const qpcrProtocol: ProtocolTemplate = {
       columnName: 'Cell_Line',
       expectedType: 'categorical',
       allowedValues: ['HeLa'],
-      knownVariants: { hela: 'HeLa', HELA: 'HeLa' },
+      variantMappingRules: [{ variants: ['hela', 'HELA'], mapsTo: 'HeLa' }],
       description: 'Cell line used in experiment',
     },
     {
@@ -112,13 +126,13 @@ export const multibatchProtocol: ProtocolTemplate = {
       columnName: 'Treatment_Group',
       expectedType: 'categorical',
       allowedValues: ['Control', 'Drug X'],
-      knownVariants: {
-        ctrl: 'Control',
-        control: 'Control',
-        CTRL: 'Control',
-        Ctrl: 'Control',
-        Vehicle: 'Control',
-      },
+      variantMappingRules: [
+        {
+          variants: ['ctrl', 'control', 'CTRL', 'Ctrl', 'Vehicle'],
+          mapsTo: 'Control',
+          label: 'Control / vehicle spellings',
+        },
+      ],
       expectedReplicateCount: 3,
       description: 'Treatment condition — Control includes Vehicle/Ctrl variants',
     },

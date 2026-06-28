@@ -2,6 +2,7 @@ import type { Column } from '../../types/dataset';
 import type { ColumnRule } from '../../types/protocol';
 import type { AnomalyFlag } from '../../types/anomaly';
 import { fuzzyMatchAllowed } from '../suggestions/canonicalSuggestions';
+import { tryMappingRuleMatch } from '../protocol/mappingRules';
 import { tryRegexVariantMatch } from '../protocol/regexRules';
 import { generateId } from '../utils';
 
@@ -37,6 +38,18 @@ export function schemaValidate(column: Column, rule: ColumnRule): SchemaValidate
           to: rule.knownVariants[strValue],
         });
         return;
+      }
+
+      if (rule.variantMappingRules?.length) {
+        const mappingHit = tryMappingRuleMatch(strValue, rule.variantMappingRules);
+        if (mappingHit) {
+          silentNormalizations.push({
+            rowIndex,
+            from: strValue,
+            to: mappingHit.mapsTo,
+          });
+          return;
+        }
       }
 
       if (rule.variantRegexRules?.length) {

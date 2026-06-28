@@ -1,6 +1,13 @@
-import type { ColumnRule, ExpectedType, ProtocolTemplate, VariantRegexRule } from '../../types/protocol';
+import type {
+  ColumnRule,
+  ExpectedType,
+  ProtocolTemplate,
+  VariantMappingRule,
+  VariantRegexRule,
+} from '../../types/protocol';
 import { Button } from '../shared/Button';
 import { Chip } from '../shared/Chip';
+import { parseVariantList } from '../../lib/protocol/mappingRules';
 import { REGEX_PRESETS, testRegexRules, validateRegexPattern } from '../../lib/protocol/regexRules';
 import { generateId } from '../../lib/utils';
 import { useState } from 'react';
@@ -12,6 +19,197 @@ interface ColumnRuleEditorProps {
   onRemove: () => void;
   /** When false, regex rules are view-only (Elena view mode). */
   regexEditable?: boolean;
+  /** Simple mapping rules — editable for both personas by default. */
+  mappingEditable?: boolean;
+}
+
+function MappingRuleRow({
+  rule,
+  onChange,
+  onRemove,
+  editable,
+}: {
+  rule: VariantMappingRule;
+  onChange: (updated: VariantMappingRule) => void;
+  onRemove: () => void;
+  editable: boolean;
+}) {
+  const variantText = rule.variants.join(', ');
+
+  if (!editable) {
+    return (
+      <li className="flex flex-wrap items-center gap-2 rounded bg-white p-2 text-xs">
+        <span className="font-mono text-slate-700">[{variantText}]</span>
+        <span>→</span>
+        <Chip color="brand">{rule.mapsTo}</Chip>
+        {rule.label && <span className="text-slate-500">({rule.label})</span>}
+      </li>
+    );
+  }
+
+  return (
+    <li className="rounded bg-white p-2">
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <label className="text-xs text-slate-600">
+          Variants (comma-separated)
+          <input
+            placeholder="drug_a, drug-a, DrugA"
+            value={variantText}
+            onChange={(e) =>
+              onChange({ ...rule, variants: parseVariantList(e.target.value) })
+            }
+            className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 font-mono text-sm"
+          />
+        </label>
+        <label className="text-xs text-slate-600">
+          Maps to
+          <input
+            placeholder="Drug A"
+            value={rule.mapsTo}
+            onChange={(e) => onChange({ ...rule, mapsTo: e.target.value })}
+            className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </label>
+        <label className="text-xs text-slate-600">
+          Label (optional)
+          <input
+            placeholder="Drug A typos"
+            value={rule.label ?? ''}
+            onChange={(e) =>
+              onChange({ ...rule, label: e.target.value || undefined })
+            }
+            className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </label>
+        <div className="flex items-end">
+          <Button variant="ghost" onClick={onRemove}>
+            Remove
+          </Button>
+        </div>
+      </div>
+      {rule.variants.length > 0 && rule.mapsTo.trim() && (
+        <p className="mt-1 text-[10px] text-slate-400">
+          Preview: [{rule.variants.join(', ')}] → {rule.mapsTo.trim()}
+        </p>
+      )}
+    </li>
+  );
+}
+
+function MappingRulesSection({
+  rules,
+  onChange,
+  editable,
+}: {
+  rules: VariantMappingRule[];
+  onChange: (rules: VariantMappingRule[]) => void;
+  editable: boolean;
+}) {
+  const [draftVariants, setDraftVariants] = useState('');
+  const [draftMapsTo, setDraftMapsTo] = useState('');
+  const [draftLabel, setDraftLabel] = useState('');
+  const [expanded, setExpanded] = useState(rules.length > 0);
+
+  const addRule = () => {
+    const variants = parseVariantList(draftVariants);
+    if (!variants.length) {
+      window.alert('Add at least one variant spelling');
+      return;
+    }
+    if (!draftMapsTo.trim()) {
+      window.alert('Maps-to canonical value is required');
+      return;
+    }
+    onChange([
+      ...rules,
+      {
+        variants,
+        mapsTo: draftMapsTo.trim(),
+        label: draftLabel.trim() || undefined,
+      },
+    ]);
+    setDraftVariants('');
+    setDraftMapsTo('');
+    setDraftLabel('');
+  };
+
+  const updateRule = (index: number, updated: VariantMappingRule) => {
+    const next = [...rules];
+    next[index] = updated;
+    onChange(next);
+  };
+
+  const removeRule = (index: number) => {
+    onChange(rules.filter((_, j) => j !== index));
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border border-brand-200 bg-brand-50/40 p-3">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between text-left text-sm font-medium text-slate-800"
+        onClick={() => setExpanded(!expanded)}
+      >
+        Mapping rules
+        <span className="text-xs text-slate-500">{expanded ? '▼' : '▶'} Simple spellings</span>
+      </button>
+      <p className="mt-1 text-xs text-slate-600">
+        List alternate labels that mean the same thing — no regex needed. Example:{' '}
+        <span className="font-mono text-brand-800">drug_a, drug-a, DrugA</span> →{' '}
+        <strong>Drug A</strong>.
+      </p>
+
+      {expanded && (
+        <>
+          {rules.length > 0 && (
+            <ul className="mt-2 space-y-2">
+              {rules.map((r, i) => (
+                <MappingRuleRow
+                  key={i}
+                  rule={r}
+                  editable={editable}
+                  onChange={(updated) => updateRule(i, updated)}
+                  onRemove={() => removeRule(i)}
+                />
+              ))}
+            </ul>
+          )}
+
+          {editable ? (
+            <>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <input
+                  placeholder="Variants: drug_a, drug-a, DrugA"
+                  value={draftVariants}
+                  onChange={(e) => setDraftVariants(e.target.value)}
+                  className="rounded border border-slate-300 px-2 py-1 text-sm font-mono"
+                />
+                <input
+                  placeholder="Maps to (canonical)"
+                  value={draftMapsTo}
+                  onChange={(e) => setDraftMapsTo(e.target.value)}
+                  className="rounded border border-slate-300 px-2 py-1 text-sm"
+                />
+                <input
+                  placeholder="Label (optional)"
+                  value={draftLabel}
+                  onChange={(e) => setDraftLabel(e.target.value)}
+                  className="rounded border border-slate-300 px-2 py-1 text-sm"
+                />
+              </div>
+              <Button className="mt-2" variant="secondary" onClick={addRule}>
+                Add mapping rule
+              </Button>
+            </>
+          ) : (
+            rules.length === 0 && (
+              <p className="mt-2 text-xs text-slate-500">No mapping rules on this column.</p>
+            )
+          )}
+        </>
+      )}
+    </div>
+  );
 }
 
 function RegexRuleRow({
@@ -156,8 +354,8 @@ function RegexRulesSection({
         <span className="text-xs text-slate-500">{expanded ? '▼' : '▶'} Optional</span>
       </button>
       <p className="mt-1 text-xs text-slate-500">
-        For Marcus — match label <em>families</em> (e.g. all ctrl* → Control). Elena never sees
-        these; prefer known variants when possible.
+        For Marcus — match label <em>families</em> (e.g. all ctrl* → Control). Use mapping
+        rules above when you can; reach for regex when patterns are open-ended.
       </p>
 
       {expanded && (
@@ -255,6 +453,7 @@ export function ColumnRuleEditor({
   onChange,
   onRemove,
   regexEditable = true,
+  mappingEditable = true,
 }: ColumnRuleEditorProps) {
   const sampleValues = rule.allowedValues ?? ['control', 'ctrl_r2', 'drug_a'];
 
@@ -338,6 +537,12 @@ export function ColumnRuleEditor({
               }}
             />
           </div>
+
+          <MappingRulesSection
+            rules={rule.variantMappingRules ?? []}
+            onChange={(variantMappingRules) => onChange({ ...rule, variantMappingRules })}
+            editable={mappingEditable}
+          />
 
           <RegexRulesSection
             rules={rule.variantRegexRules ?? []}
@@ -426,7 +631,9 @@ export function ColumnRuleEditor({
 
       {rule.knownVariants && Object.keys(rule.knownVariants).length > 0 && (
         <div className="mt-3">
-          <p className="text-sm font-medium text-slate-700">Known variants (from Elena promotions)</p>
+          <p className="text-sm font-medium text-slate-700">
+            Promoted variants (from cleaning session)
+          </p>
           <div className="mt-1 space-y-1">
             {Object.entries(rule.knownVariants).map(([variant, canonical]) => (
               <div key={variant} className="flex items-center gap-2 text-sm">

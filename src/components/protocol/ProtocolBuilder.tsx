@@ -10,6 +10,10 @@ import {
   protocolFromForm,
 } from './ColumnRuleEditor';
 import { validateRegexPattern } from '../../lib/protocol/regexRules';
+import {
+  groupKnownVariantsIntoRules,
+  normalizeMappingRules,
+} from '../../lib/protocol/mappingRules';
 
 export function ProtocolBuilder() {
   const protocols = useBioBridgeStore((s) => s.protocols);
@@ -49,6 +53,14 @@ export function ProtocolBuilder() {
             ...r,
             allowedValues: r.allowedValues ? [...r.allowedValues] : undefined,
             knownVariants: r.knownVariants ? { ...r.knownVariants } : undefined,
+            variantMappingRules: r.variantMappingRules?.length
+              ? r.variantMappingRules.map((mr) => ({
+                  ...mr,
+                  variants: [...mr.variants],
+                }))
+              : r.knownVariants && Object.keys(r.knownVariants).length
+                ? groupKnownVariantsIntoRules(r.knownVariants)
+                : undefined,
             variantRegexRules: r.variantRegexRules?.map((vr) => ({ ...vr })),
           }))
         : [emptyRule()],
@@ -60,6 +72,16 @@ export function ProtocolBuilder() {
     if (!name.trim()) return;
     const filteredRules = rules.filter((r) => r.columnName.trim());
     for (const r of filteredRules) {
+      for (const mr of r.variantMappingRules ?? []) {
+        if (!mr.mapsTo.trim()) {
+          window.alert(`Maps-to value required for mapping rule on "${r.columnName}"`);
+          return;
+        }
+        if (!mr.variants.some((v) => v.trim())) {
+          window.alert(`At least one variant required for mapping rule on "${r.columnName}"`);
+          return;
+        }
+      }
       for (const vr of r.variantRegexRules ?? []) {
         const err = validateRegexPattern(vr.pattern.trim());
         if (err) {
@@ -77,6 +99,7 @@ export function ProtocolBuilder() {
       name.trim(),
       filteredRules.map((r) => ({
         ...r,
+        variantMappingRules: normalizeMappingRules(r.variantMappingRules ?? []),
         variantRegexRules: r.variantRegexRules?.map((vr) => ({
           ...vr,
           pattern: vr.pattern.trim(),
@@ -177,6 +200,7 @@ export function ProtocolBuilder() {
                 rule={rule}
                 availableColumns={availableColumns}
                 regexEditable={isMarcus}
+                mappingEditable
                 onChange={(updated) => {
                   const next = [...rules];
                   next[index] = updated;

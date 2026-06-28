@@ -256,6 +256,10 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
       columnRules: original.columnRules.map((r) => ({
         ...r,
         knownVariants: r.knownVariants ? { ...r.knownVariants } : undefined,
+        variantMappingRules: r.variantMappingRules?.map((mr) => ({
+          ...mr,
+          variants: [...mr.variants],
+        })),
         variantRegexRules: r.variantRegexRules?.map((vr) => ({ ...vr })),
         allowedValues: r.allowedValues ? [...r.allowedValues] : undefined,
       })),

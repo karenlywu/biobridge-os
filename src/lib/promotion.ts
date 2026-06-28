@@ -2,6 +2,7 @@ import type { AnomalyFlag } from '../types/anomaly';
 import type { CleaningAction } from '../types/action';
 import type { ProtocolTemplate } from '../types/protocol';
 import { normalizeKey } from './utils';
+import { isVariantCoveredByMappingRules } from './protocol/mappingRules';
 import type { PendingPromotion } from '../types/promotion';
 
 /** Values that differ from the merge target (excludes the canonical form). */
@@ -47,6 +48,7 @@ export function derivePromotionPair(
   const rule = protocol?.columnRules.find((r) => r.columnName === flag.columnName);
   if (rule?.allowedValues?.some((a) => normalizeKey(a) === normalizeKey(variant))) return null;
   if (rule?.knownVariants && variant in rule.knownVariants) return null;
+  if (isVariantCoveredByMappingRules(variant, rule?.variantMappingRules)) return null;
 
   return {
     variant,
