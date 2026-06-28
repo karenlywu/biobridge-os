@@ -61,6 +61,20 @@ export function parseVariantList(input: string): string[] {
   return result;
 }
 
+export function testMappingRules(
+  rules: VariantMappingRule[],
+  sampleValues: string[],
+): Array<{ value: string; mapsTo: string | null; ruleLabel?: string }> {
+  return sampleValues.map((value) => {
+    const match = tryMappingRuleMatch(value, rules);
+    return {
+      value,
+      mapsTo: match?.mapsTo ?? null,
+      ruleLabel: match?.rule.label ?? match?.rule.mapsTo,
+    };
+  });
+}
+
 export function normalizeMappingRules(
   rules: VariantMappingRule[],
 ): VariantMappingRule[] {

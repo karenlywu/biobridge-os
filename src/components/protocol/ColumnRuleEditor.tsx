@@ -7,7 +7,7 @@ import type {
 } from '../../types/protocol';
 import { Button } from '../shared/Button';
 import { Chip } from '../shared/Chip';
-import { parseVariantList } from '../../lib/protocol/mappingRules';
+import { parseVariantList, testMappingRules } from '../../lib/protocol/mappingRules';
 import { REGEX_PRESETS, testRegexRules, validateRegexPattern } from '../../lib/protocol/regexRules';
 import { generateId } from '../../lib/utils';
 import { useId, useState } from 'react';
@@ -100,17 +100,25 @@ function MappingRuleRow({
 function MappingRulesSection({
   rules,
   onChange,
+  sampleValues,
   editable,
 }: {
   rules: VariantMappingRule[];
   onChange: (rules: VariantMappingRule[]) => void;
+  sampleValues: string[];
   editable: boolean;
 }) {
   const [draftVariants, setDraftVariants] = useState('');
   const [draftMapsTo, setDraftMapsTo] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
+  const [testInput, setTestInput] = useState(sampleValues.slice(0, 5).join(', '));
   const [expanded, setExpanded] = useState(rules.length > 0);
   const [draftError, setDraftError] = useState<string | null>(null);
+
+  const tests = testMappingRules(
+    rules,
+    testInput.split(',').map((s) => s.trim()).filter(Boolean),
+  );
 
   const addRule = () => {
     const variants = parseVariantList(draftVariants);
@@ -216,6 +224,30 @@ function MappingRulesSection({
               <p className="mt-2 text-xs text-slate-500">No mapping rules on this column.</p>
             )
           )}
+
+          <div className="mt-3">
+            <label className="text-xs text-slate-600">
+              Test against sample values (comma-separated)
+              <input
+                value={testInput}
+                onChange={(e) => setTestInput(e.target.value)}
+                className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+              />
+            </label>
+            {tests.length > 0 && (
+              <table className="mt-1 w-full text-xs">
+                <tbody>
+                  {tests.map((t) => (
+                    <tr key={t.value}>
+                      <td className="py-0.5 font-mono">{t.value}</td>
+                      <td className="px-2">→</td>
+                      <td>{t.mapsTo ?? '— no match —'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </>
       )}
     </div>
@@ -571,6 +603,7 @@ export function ColumnRuleEditor({
           <MappingRulesSection
             rules={rule.variantMappingRules ?? []}
             onChange={(variantMappingRules) => onChange({ ...rule, variantMappingRules })}
+            sampleValues={sampleValues}
             editable={mappingEditable}
           />
 
