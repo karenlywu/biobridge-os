@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import type { AnomalyFlag } from '../../types/anomaly';
 import {
@@ -14,9 +15,10 @@ import { useFlagSuggestion } from './useFlagSuggestion';
 interface ClusterCardProps {
   flag: AnomalyFlag;
   protocolName?: string;
+  hideAutoSuggestion?: boolean;
 }
 
-export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
+export function ClusterCard({ flag, protocolName, hideAutoSuggestion = false }: ClusterCardProps) {
   const resolveFlag = useBioBridgeStore((s) => s.resolveFlag);
   const applySuggestion = useBioBridgeStore((s) => s.applySuggestion);
   const startInteraction = useBioBridgeStore((s) => s.startInteraction);
@@ -26,6 +28,9 @@ export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
   const currentActor = useBioBridgeStore((s) => s.currentActor);
   const suggestion = useFlagSuggestion(flag);
+  const [showRegexForm, setShowRegexForm] = useState(false);
+  const [regexPattern, setRegexPattern] = useState('');
+  const [regexReplacement, setRegexReplacement] = useState('');
 
   if (flag.resolved) return null;
 
@@ -77,7 +82,7 @@ export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
       <p className="mb-3 text-sm text-slate-600">{plain.cardDescription(labelCtx)}</p>
       {colDesc && <p className="mb-2 text-xs text-slate-500">{colDesc}</p>}
 
-      {suggestion && (
+      {suggestion && !hideAutoSuggestion && (
         <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
           <p className="text-sm font-medium text-emerald-900">Recommended: {suggestion.title}</p>
           <p className="text-xs text-emerald-800">{suggestion.description}</p>
@@ -85,6 +90,9 @@ export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
             Apply suggested fix
           </Button>
         </div>
+      )}
+      {suggestion && hideAutoSuggestion && suggestion.autoApplicable && (
+        <p className="mb-3 text-xs text-emerald-700">Auto-fix available in Suggestions above.</p>
       )}
 
       <div className="mb-3 flex flex-wrap gap-1">
@@ -138,33 +146,62 @@ export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
           </>
         )}
         {advancedModeEnabled && (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              const pattern = window.prompt('Regex pattern:');
-              const replacement = window.prompt('Replacement value:');
-              if (pattern && replacement !== null) {
-                startInteraction();
-                const now = new Date().toISOString();
-                resolveFlag(flag.id, {
-                  id: generateId('action'),
-                  type: 'regex_transform',
-                  target: {
-                    columnName: flag.columnName,
-                    rowIndices: flag.affectedRowIndices,
-                  },
-                  beforeValues: variants.map(String),
-                  afterValue: replacement,
-                  reason: pattern,
-                  actor: currentActor,
-                  timestampStart: now,
-                  timestampEnd: now,
-                });
-              }
-            }}
-          >
-            Custom regex…
-          </Button>
+          <>
+            {!showRegexForm ? (
+              <Button variant="ghost" onClick={() => setShowRegexForm(true)}>
+                Custom regex…
+              </Button>
+            ) : (
+              <div className="w-full rounded-lg border border-violet-200 bg-violet-50/50 p-3">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <input
+                    placeholder="Regex pattern"
+                    value={regexPattern}
+                    onChange={(e) => setRegexPattern(e.target.value)}
+                    className="rounded border border-slate-300 px-2 py-1 font-mono text-sm"
+                  />
+                  <input
+                    placeholder="Replacement value"
+                    value={regexReplacement}
+                    onChange={(e) => setRegexReplacement(e.target.value)}
+                    className="rounded border border-slate-300 px-2 py-1 text-sm"
+                  />
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (!regexPattern.trim()) return;
+                      startInteraction();
+                      const now = new Date().toISOString();
+                      resolveFlag(flag.id, {
+                        id: generateId('action'),
+                        type: 'regex_transform',
+                        target: {
+                          columnName: flag.columnName,
+                          rowIndices: flag.affectedRowIndices,
+                        },
+                        beforeValues: variants.map(String),
+                        afterValue: regexReplacement,
+                        reason: regexPattern.trim(),
+                        actor: currentActor,
+                        timestampStart: now,
+                        timestampEnd: now,
+                      });
+                      setShowRegexForm(false);
+                      setRegexPattern('');
+                      setRegexReplacement('');
+                    }}
+                  >
+                    Apply pattern
+                  </Button>
+                  <Button variant="ghost" onClick={() => setShowRegexForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
       <p className="mt-2 text-[10px] text-slate-400">

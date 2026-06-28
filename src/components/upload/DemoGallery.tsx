@@ -2,6 +2,8 @@ import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import { DEMO_FILES } from '../../data/demoManifest';
 import { parseCsvText } from '../../lib/parsing/parseCsv';
 import { parseExcelSheet } from '../../lib/parsing/parseExcel';
+import { ConfirmDialog } from '../shared/ConfirmDialog';
+import { useState } from 'react';
 
 const RAW_IMPORTS: Record<string, () => Promise<{ default: string }>> = {
   demo_01: () => import('../../data/sampleDatasets/demo_01_plate_viability_assay.csv?raw'),
@@ -13,9 +15,11 @@ const RAW_IMPORTS: Record<string, () => Promise<{ default: string }>> = {
 };
 
 export function DemoGallery() {
+  const dataset = useBioBridgeStore((s) => s.dataset);
   const loadDataset = useBioBridgeStore((s) => s.loadDataset);
   const setActiveProtocol = useBioBridgeStore((s) => s.setActiveProtocol);
   const protocols = useBioBridgeStore((s) => s.protocols);
+  const [pendingDemoId, setPendingDemoId] = useState<string | null>(null);
 
   const loadDemo = async (demoId: string) => {
     const spec = DEMO_FILES.find((d) => d.id === demoId);
@@ -44,6 +48,11 @@ export function DemoGallery() {
     }
   };
 
+  const handleDemoClick = (demoId: string) => {
+    if (dataset) setPendingDemoId(demoId);
+    else void loadDemo(demoId);
+  };
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <h3 className="font-semibold text-slate-900">Demo datasets</h3>
@@ -55,7 +64,7 @@ export function DemoGallery() {
           <button
             key={demo.id}
             type="button"
-            onClick={() => void loadDemo(demo.id)}
+            onClick={() => handleDemoClick(demo.id)}
             className={`rounded-lg border p-3 text-left transition hover:border-brand-500 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500 ${
               demo.id === 'demo_07'
                 ? 'border-brand-400 bg-brand-50/50 ring-1 ring-brand-200'
@@ -78,6 +87,18 @@ export function DemoGallery() {
           </button>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={pendingDemoId !== null}
+        title="Replace current session?"
+        message="Loading a demo dataset will discard your current cleaning progress and audit trail for this session."
+        confirmLabel="Load demo"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingDemoId) void loadDemo(pendingDemoId).then(() => setPendingDemoId(null));
+        }}
+        onCancel={() => setPendingDemoId(null)}
+      />
     </div>
   );
 }

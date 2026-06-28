@@ -10,7 +10,7 @@ import { Chip } from '../shared/Chip';
 import { parseVariantList } from '../../lib/protocol/mappingRules';
 import { REGEX_PRESETS, testRegexRules, validateRegexPattern } from '../../lib/protocol/regexRules';
 import { generateId } from '../../lib/utils';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 interface ColumnRuleEditorProps {
   rule: ColumnRule;
@@ -21,6 +21,7 @@ interface ColumnRuleEditorProps {
   regexEditable?: boolean;
   /** Simple mapping rules — editable for both personas by default. */
   mappingEditable?: boolean;
+  readOnly?: boolean;
 }
 
 function MappingRuleRow({
@@ -454,7 +455,9 @@ export function ColumnRuleEditor({
   onRemove,
   regexEditable = true,
   mappingEditable = true,
+  readOnly = false,
 }: ColumnRuleEditorProps) {
+  const columnListId = useId();
   const sampleValues = rule.allowedValues ?? ['control', 'ctrl_r2', 'drug_a'];
 
   const addAllowedValue = (value: string) => {
@@ -470,21 +473,24 @@ export function ColumnRuleEditor({
     <div className="rounded-lg border border-slate-200 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h4 className="font-medium text-slate-800">Column rule</h4>
-        <Button variant="ghost" onClick={onRemove}>
-          Remove
-        </Button>
+        {!readOnly && (
+          <Button variant="ghost" onClick={onRemove}>
+            Remove
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
           Column name
           <input
-            list="column-names"
             value={rule.columnName}
             onChange={(e) => onChange({ ...rule, columnName: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            readOnly={readOnly}
+            list={columnListId}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 read-only:bg-slate-50"
           />
-          <datalist id="column-names">
+          <datalist id={columnListId}>
             {availableColumns.map((c) => (
               <option key={c} value={c} />
             ))}
@@ -498,7 +504,8 @@ export function ColumnRuleEditor({
             onChange={(e) =>
               onChange({ ...rule, expectedType: e.target.value as ExpectedType })
             }
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            disabled={readOnly}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-50"
           >
             <option value="categorical">Categorical</option>
             <option value="numeric">Numeric</option>
@@ -515,17 +522,21 @@ export function ColumnRuleEditor({
               {(rule.allowedValues ?? []).map((v) => (
                 <Chip
                   key={v}
-                  onRemove={() =>
-                    onChange({
-                      ...rule,
-                      allowedValues: rule.allowedValues?.filter((x) => x !== v),
-                    })
+                  onRemove={
+                    readOnly
+                      ? undefined
+                      : () =>
+                          onChange({
+                            ...rule,
+                            allowedValues: rule.allowedValues?.filter((x) => x !== v),
+                          })
                   }
                 >
                   {v}
                 </Chip>
               ))}
             </div>
+            {!readOnly && (
             <input
               placeholder="Type value, press Enter"
               className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
@@ -536,6 +547,7 @@ export function ColumnRuleEditor({
                 }
               }}
             />
+            )}
           </div>
 
           <MappingRulesSection

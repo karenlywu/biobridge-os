@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react';
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import { DropZone } from '../upload/DropZone';
 import { IngestionSummaryCard } from '../upload/IngestionSummaryCard';
@@ -14,11 +14,15 @@ import { HandoffReportPanel } from '../audittrail/HandoffReportPanel';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { Button } from '../shared/Button';
 import {
-  DEFAULT_WORKSPACE_PANEL_ORDER,
+  ELENA_DEFAULT_PANEL_ORDER,
   loadPanelOrder,
+  MARCUS_DEFAULT_PANEL_ORDER,
+  PANEL_PHASE,
+  PHASE_LABELS,
   reorderPanels,
   savePanelOrder,
   type WorkspacePanelId,
+  type WorkspacePhaseId,
 } from '../../lib/workspacePanels';
 
 export function WorkspacePanels() {
@@ -29,9 +33,21 @@ export function WorkspacePanels() {
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
   const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
 
-  const [panelOrder, setPanelOrder] = useState<WorkspacePanelId[]>(loadPanelOrder);
+  const [panelOrder, setPanelOrder] = useState<WorkspacePanelId[]>(() =>
+    loadPanelOrder(activePersonaId),
+  );
   const [draggingId, setDraggingId] = useState<WorkspacePanelId | null>(null);
   const [dropTargetId, setDropTargetId] = useState<WorkspacePanelId | null>(null);
+  const [pinSuggestions, setPinSuggestions] = useState(false);
+
+  useEffect(() => {
+    setPanelOrder(loadPanelOrder(activePersonaId));
+    setPinSuggestions(false);
+  }, [activePersonaId]);
+
+  useEffect(() => {
+    setPinSuggestions(false);
+  }, [dataset?.sourceFileName]);
 
   const unresolvedCount = useMemo(
     () => anomalyFlags.filter((f) => !f.resolved).length,
@@ -44,7 +60,7 @@ export function WorkspacePanels() {
     (): Record<WorkspacePanelId, boolean> => ({
       upload: true,
       preflight: true,
-      suggestions: unresolvedCount > 0,
+      suggestions: unresolvedCount > 0 || pinSuggestions,
       ingestion: true,
       dictionary: Boolean(
         activeProtocol?.columnRules.some((r) => r.description || r.units),
@@ -56,7 +72,7 @@ export function WorkspacePanels() {
       python: true,
       audit: true,
     }),
-    [unresolvedCount, activeProtocol, auditTrail.length],
+    [unresolvedCount, pinSuggestions, activeProtocol, auditTrail.length],
   );
 
   const panelMeta = useMemo(
@@ -105,10 +121,13 @@ export function WorkspacePanels() {
     [activePersonaId, dataset, activeProtocol?.name],
   );
 
-  const commitOrder = useCallback((next: WorkspacePanelId[]) => {
-    setPanelOrder(next);
-    savePanelOrder(next);
-  }, []);
+  const commitOrder = useCallback(
+    (next: WorkspacePanelId[]) => {
+      setPanelOrder(next);
+      savePanelOrder(activePersonaId, next);
+    },
+    [activePersonaId],
+  );
 
   const handleDragStart = (id: WorkspacePanelId) => (e: DragEvent) => {
     e.dataTransfer.setData('text/plain', id);
@@ -138,7 +157,11 @@ export function WorkspacePanels() {
   };
 
   const resetOrder = () => {
-    commitOrder([...DEFAULT_WORKSPACE_PANEL_ORDER]);
+    const defaults =
+      activePersonaId === 'marcus'
+        ? [...MARCUS_DEFAULT_PANEL_ORDER]
+        : [...ELENA_DEFAULT_PANEL_ORDER];
+    commitOrder(defaults);
   };
 
   const renderPanelContent = (id: WorkspacePanelId) => {
@@ -163,7 +186,11 @@ export function WorkspacePanels() {
       case 'suggestions':
         return (
           <div className="p-4">
-            <SuggestionsPanel embedded />
+            <SuggestionsPanel
+              embedded
+              onBulkComplete={() => setPinSuggestions(true)}
+              onDismiss={() => setPinSuggestions(false)}
+            />
           </div>
         );
       case 'ingestion':
@@ -209,6 +236,8 @@ export function WorkspacePanels() {
 
   if (!dataset) return null;
 
+  let lastPhase: WorkspacePhaseId | null = null;
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500 shadow-sm">
@@ -221,23 +250,36 @@ export function WorkspacePanels() {
       {panelOrder.map((id) => {
         if (!visibility[id]) return null;
         const meta = panelMeta[id];
+        const phase = PANEL_PHASE[id];
+        const showPhaseHeader = phase !== lastPhase;
+        lastPhase = phase;
+
         return (
-          <CollapsibleSection
-            key={id}
-            panelId={id}
-            title={meta.title}
-            subtitle={meta.subtitle}
-            defaultOpen={meta.defaultOpen}
-            draggable
-            isDragging={draggingId === id}
-            isDropTarget={dropTargetId === id}
-            onDragStart={handleDragStart(id)}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver(id)}
-            onDrop={handleDrop(id)}
-          >
-            {renderPanelContent(id)}
-          </CollapsibleSection>
+          <div key={id}>
+            {showPhaseHeader && (
+              <div className="mb-2 mt-1 flex items-center gap-2 px-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {PHASE_LABELS[phase]}
+                </span>
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+            )}
+            <CollapsibleSection
+              panelId={id}
+              title={meta.title}
+              subtitle={meta.subtitle}
+              defaultOpen={meta.defaultOpen}
+              draggable
+              isDragging={draggingId === id}
+              isDropTarget={dropTargetId === id}
+              onDragStart={handleDragStart(id)}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver(id)}
+              onDrop={handleDrop(id)}
+            >
+              {renderPanelContent(id)}
+            </CollapsibleSection>
+          </div>
         );
       })}
     </div>

@@ -5,16 +5,17 @@ export function IngestionSummaryCard({ embedded = false }: { embedded?: boolean 
   const dataset = useBioBridgeStore((s) => s.dataset);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
-  const setActiveProtocol = useBioBridgeStore((s) => s.setActiveProtocol);
   const anomalyFlags = useBioBridgeStore((s) => s.anomalyFlags);
+  const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
 
   if (!dataset) return null;
 
   const activeProtocol = protocols.find((p) => p.id === activeProtocolId);
   const unresolved = anomalyFlags.filter((f) => !f.resolved).length;
-  const schemaFlags = anomalyFlags.filter(
+  const protocolIssues = anomalyFlags.filter(
     (f) => !f.resolved && f.detectionSource === 'schema',
   ).length;
+  const isElena = activePersonaId === 'elena';
 
   return (
     <div className={embedded ? '' : 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm'}>
@@ -26,35 +27,19 @@ export function IngestionSummaryCard({ embedded = false }: { embedded?: boolean 
             {dataset.sourceFormat.toUpperCase()}
             {dataset.rowCount > LARGE_FILE_THRESHOLD && ' · preview limited to 2,000 rows'}
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="protocol-select" className="text-sm text-slate-600">
-            Protocol:
-          </label>
-          <select
-            id="protocol-select"
-            value={activeProtocolId ?? ''}
-            onChange={(e) =>
-              setActiveProtocol(e.target.value ? e.target.value : null)
-            }
-            className="rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-          >
-            <option value="">None (heuristic only)</option>
-            {protocols.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+          {activeProtocol && (
+            <p className="mt-1 text-xs text-violet-700">Checking against: {activeProtocol.name}</p>
+          )}
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-3 text-sm">
         <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-          {unresolved} unresolved flags
+          {unresolved} {isElena ? 'issues to fix' : 'unresolved flags'}
         </span>
-        {activeProtocol && (
+        {activeProtocol && protocolIssues > 0 && (
           <span className="rounded-full bg-violet-100 px-3 py-1 text-violet-800">
-            {schemaFlags} schema violations · {activeProtocol.name}
+            {protocolIssues}{' '}
+            {isElena ? "don't match protocol" : 'schema violations'}
           </span>
         )}
       </div>

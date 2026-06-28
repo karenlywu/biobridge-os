@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import type { AnomalyFlag } from '../../types/anomaly';
 import { ANOMALY_PLAIN_LANGUAGE } from '../../lib/anomalyLabels';
@@ -6,46 +7,49 @@ import { Button } from '../shared/Button';
 import { useFlagSuggestion } from './useFlagSuggestion';
 
 const JUDGMENT_OPTIONS = [
-  { label: 'Instrument could not get a reading', value: null as string | number | null },
-  { label: 'Sample was contaminated — exclude', value: null },
-  { label: 'Valid edge case — keep as-is', value: '' },
-  { label: 'Intentionally left blank', value: '' },
+  { id: 'no-reading', label: 'Instrument could not get a reading', value: null as string | number | null, type: 'exclude_value' as const },
+  { id: 'contaminated', label: 'Sample was contaminated — exclude', value: null, type: 'exclude_value' as const },
+  { id: 'edge-case', label: 'Valid edge case — keep as-is', value: '', type: 'impute_value' as const },
+  { id: 'blank', label: 'Intentionally left blank', value: '', type: 'impute_value' as const },
+  { id: 'follow-up', label: 'Flag row for follow-up (adds QC_Flag on export)', value: 'QC', type: 'flag_for_review' as const },
+  { id: 'ack', label: 'Acknowledge and continue — no change needed', value: null, type: 'flag_for_review' as const },
 ];
 
 interface JudgmentCallCardProps {
   flag: AnomalyFlag;
+  hideAutoSuggestion?: boolean;
 }
 
-export function JudgmentCallCard({ flag }: JudgmentCallCardProps) {
+export function JudgmentCallCard({ flag, hideAutoSuggestion = false }: JudgmentCallCardProps) {
   const resolveFlag = useBioBridgeStore((s) => s.resolveFlag);
   const applySuggestion = useBioBridgeStore((s) => s.applySuggestion);
   const startInteraction = useBioBridgeStore((s) => s.startInteraction);
   const suggestion = useFlagSuggestion(flag);
   const currentActor = useBioBridgeStore((s) => s.currentActor);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (flag.resolved || flag.type !== 'missing_value') return null;
 
   const isAmbiguous = flag.detail === 'ambiguous_whitespace';
   const plain = ANOMALY_PLAIN_LANGUAGE.missing_value;
+  const selected = JUDGMENT_OPTIONS.find((o) => o.id === selectedId);
 
-  const resolve = (
-    reason: string,
-    afterValue: string | number | null,
-    type: 'impute_value' | 'exclude_value' | 'flag_for_review' = 'impute_value',
-  ) => {
+  const applySelected = () => {
+    if (!selected) return;
     startInteraction();
     const now = new Date().toISOString();
     resolveFlag(flag.id, {
       id: generateId('action'),
-      type,
+      type: selected.type,
       target: { columnName: flag.columnName, rowIndices: flag.affectedRowIndices },
       beforeValues: [isAmbiguous ? ' ' : null],
-      afterValue,
-      reason,
+      afterValue: selected.value,
+      reason: selected.label,
       actor: currentActor,
       timestampStart: now,
       timestampEnd: now,
     });
+    setSelectedId(null);
   };
 
   return (
@@ -60,7 +64,7 @@ export function JudgmentCallCard({ flag }: JudgmentCallCardProps) {
             })}
       </p>
 
-      {suggestion && (
+      {suggestion && !hideAutoSuggestion && (
         <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
           <p className="text-sm font-medium text-emerald-900">Recommended: {suggestion.title}</p>
           <p className="text-xs text-emerald-800">{suggestion.description}</p>
@@ -69,42 +73,27 @@ export function JudgmentCallCard({ flag }: JudgmentCallCardProps) {
           </Button>
         </div>
       )}
+      {suggestion && hideAutoSuggestion && suggestion.autoApplicable && (
+        <p className="mt-3 text-xs text-emerald-700">Auto-fix available in Suggestions above.</p>
+      )}
 
       <fieldset className="mt-3 space-y-2">
         <legend className="sr-only">Resolution options</legend>
         {JUDGMENT_OPTIONS.map((option) => (
-          <label key={option.label} className="flex cursor-pointer items-center gap-2 text-sm">
+          <label key={option.id} className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="radio"
               name={`judgment-${flag.id}`}
+              checked={selectedId === option.id}
+              onChange={() => setSelectedId(option.id)}
               className="text-brand-600 focus:ring-brand-500"
-              onChange={() =>
-                resolve(
-                  option.label,
-                  option.value,
-                  option.value === null ? 'exclude_value' : 'impute_value',
-                )
-              }
             />
             {option.label}
           </label>
         ))}
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="radio"
-            name={`judgment-${flag.id}`}
-            className="text-brand-600 focus:ring-brand-500"
-            onChange={() => resolve('Flagged for follow-up', 'QC', 'flag_for_review')}
-          />
-          Flag row for follow-up (adds QC_Flag on export)
-        </label>
       </fieldset>
-      <Button
-        className="mt-3"
-        variant="secondary"
-        onClick={() => resolve('Acknowledged — no change needed', null, 'flag_for_review')}
-      >
-        Acknowledge and continue
+      <Button className="mt-3" disabled={!selectedId} onClick={applySelected}>
+        Confirm selection
       </Button>
     </div>
   );

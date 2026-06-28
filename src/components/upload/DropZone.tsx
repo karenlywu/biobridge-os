@@ -1,20 +1,24 @@
 import { useCallback, useRef, useState } from 'react';
-import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import { parseCsvFile } from '../../lib/parsing/parseCsv';
 import { parseClipboardToDataset } from '../../lib/parsing/parseClipboard';
 import { listSheets, parseExcelSheet, readExcelFile } from '../../lib/parsing/parseExcel';
 import type { SheetInfo } from '../../lib/parsing/parseExcel';
 import { Button } from '../shared/Button';
+import { ConfirmDialog } from '../shared/ConfirmDialog';
+import { Modal } from '../shared/Modal';
 import { SheetPicker } from './SheetPicker';
 import { DemoGallery } from './DemoGallery';
+import { useDatasetLoadConfirm } from '../../hooks/useDatasetLoadConfirm';
 
 const ACCEPT = '.csv,.tsv,.xlsx,.xls,.ods';
 
 export function DropZone() {
-  const loadDataset = useBioBridgeStore((s) => s.loadDataset);
+  const { requestLoad, confirmLoad, cancelLoad, confirmOpen } = useDatasetLoadConfirm();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState('');
   const [pendingExcel, setPendingExcel] = useState<{
     buffer: ArrayBuffer;
     fileName: string;
@@ -27,12 +31,12 @@ export function DropZone() {
       try {
         const ext = file.name.split('.').pop()?.toLowerCase();
         if (ext === 'csv' || ext === 'tsv') {
-          loadDataset(await parseCsvFile(file));
+          requestLoad(await parseCsvFile(file));
         } else if (['xlsx', 'xls', 'ods'].includes(ext ?? '')) {
           const buffer = await readExcelFile(file);
           const sheets = listSheets(buffer);
           if (sheets.length === 1) {
-            loadDataset(parseExcelSheet(buffer, file.name, sheets[0].name));
+            requestLoad(parseExcelSheet(buffer, file.name, sheets[0].name));
           } else {
             setPendingExcel({ buffer, fileName: file.name, sheets });
           }
@@ -43,7 +47,7 @@ export function DropZone() {
         setError(e instanceof Error ? e.message : 'Failed to parse file');
       }
     },
-    [loadDataset],
+    [requestLoad],
   );
 
   const onDrop = useCallback(
@@ -56,12 +60,28 @@ export function DropZone() {
     [handleFile],
   );
 
+  const submitPaste = () => {
+    try {
+      requestLoad(parseClipboardToDataset(pasteText));
+      setPasteOpen(false);
+      setPasteText('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Parse failed');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+        aria-label="Upload lab export file"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -92,19 +112,7 @@ export function DropZone() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          onClick={() => {
-            const text = window.prompt('Paste tabular data (CSV or TSV):');
-            if (text) {
-              try {
-                loadDataset(parseClipboardToDataset(text));
-              } catch (e) {
-                setError(e instanceof Error ? e.message : 'Parse failed');
-              }
-            }
-          }}
-        >
+        <Button variant="secondary" onClick={() => setPasteOpen(true)}>
           Paste from clipboard
         </Button>
       </div>
@@ -117,7 +125,7 @@ export function DropZone() {
         <SheetPicker
           sheets={pendingExcel.sheets}
           onSelect={(sheetName) => {
-            loadDataset(
+            requestLoad(
               parseExcelSheet(pendingExcel.buffer, pendingExcel.fileName, sheetName),
             );
             setPendingExcel(null);
@@ -125,6 +133,37 @@ export function DropZone() {
           onCancel={() => setPendingExcel(null)}
         />
       )}
+
+      <Modal open={pasteOpen} onClose={() => setPasteOpen(false)} title="Paste tabular data">
+        <p className="mb-3 text-sm text-slate-600">
+          Paste CSV or TSV content from Excel, Google Sheets, or your instrument export.
+        </p>
+        <textarea
+          value={pasteText}
+          onChange={(e) => setPasteText(e.target.value)}
+          rows={8}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          placeholder="Well_ID,Treatment_Group,Expression_Value&#10;A01,Control,1.23"
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setPasteOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={submitPaste} disabled={!pasteText.trim()}>
+            Load data
+          </Button>
+        </div>
+      </Modal>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Replace current session?"
+        message="Loading a new file will discard your current cleaning progress and audit trail for this session."
+        confirmLabel="Replace session"
+        variant="danger"
+        onConfirm={confirmLoad}
+        onCancel={cancelLoad}
+      />
     </div>
   );
 }

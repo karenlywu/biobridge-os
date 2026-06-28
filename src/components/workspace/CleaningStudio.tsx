@@ -38,6 +38,7 @@ export function CleaningStudio() {
 
   const filtered = filter === 'all' ? unresolved : unresolved.filter((f) => f.type === filter);
   const replicateFlag = unresolved.find((f) => f.type === 'missing_replicate');
+  const cardFlags = filtered.filter((f) => f.type !== 'missing_replicate');
 
   return (
     <div className="space-y-4">
@@ -62,7 +63,13 @@ export function CleaningStudio() {
         </div>
       </div>
 
-      {replicateFlag && (
+      {unresolved.length === 0 && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-900">
+          All issues resolved — ready to export.
+        </div>
+      )}
+
+      {replicateFlag && (filter === 'all' || filter === 'missing_replicate') && (
         <MissingReplicateBanner
           flag={replicateFlag}
           onDismiss={() =>
@@ -82,12 +89,12 @@ export function CleaningStudio() {
       )}
 
       <div className="space-y-3">
-        {filtered.map((flag) => {
+        {cardFlags.map((flag) => {
           if (flag.type === 'numeric_type_violation') {
-            return <NumericViolationChip key={flag.id} flag={flag} />;
+            return <NumericViolationChip key={flag.id} flag={flag} hideAutoSuggestion />;
           }
           if (flag.type === 'missing_value') {
-            return <JudgmentCallCard key={flag.id} flag={flag} />;
+            return <JudgmentCallCard key={flag.id} flag={flag} hideAutoSuggestion />;
           }
           if (
             flag.type === 'casing_divergence' ||
@@ -99,11 +106,18 @@ export function CleaningStudio() {
                 key={flag.id}
                 flag={flag}
                 protocolName={activeProtocol?.name}
+                hideAutoSuggestion
               />
             );
           }
           return null;
         })}
+        {unresolved.length > 0 && cardFlags.length === 0 && filter !== 'missing_replicate' && (
+          <p className="text-sm text-slate-500">No issues match this filter.</p>
+        )}
+        {filter === 'missing_replicate' && !replicateFlag && unresolved.length > 0 && (
+          <p className="text-sm text-slate-500">No missing replicate issues in this dataset.</p>
+        )}
       </div>
     </div>
   );

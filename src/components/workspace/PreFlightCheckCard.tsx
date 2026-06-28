@@ -65,7 +65,7 @@ export function PreFlightCheckCard({ embedded = false }: { embedded?: boolean })
       </p>
       <p className="mt-1 text-sm text-amber-800">
         {activePersonaId === 'elena'
-          ? "Fix these now so Marcus doesn't have to Slack you back in three days. Plain-language summary of what we found:"
+          ? 'Fix these now so your comp-bio handoff stays smooth. Plain-language summary of what we found:'
           : 'Issues Elena would hit on first upload — schema vs heuristic breakdown:'}
       </p>
       <ul className="mt-3 space-y-1.5 text-sm text-amber-900">

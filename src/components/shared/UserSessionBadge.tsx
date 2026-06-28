@@ -62,7 +62,7 @@ export function UserSessionBadge() {
           className="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
         >
           <p className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
-            Demo — switch persona
+            Switch demo persona
           </p>
           {(Object.keys(PERSONAS) as PersonaId[]).map((id) => {
             const p = PERSONAS[id];

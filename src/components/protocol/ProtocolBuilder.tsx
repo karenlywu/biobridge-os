@@ -26,26 +26,32 @@ export function ProtocolBuilder() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'list' | 'edit'>('list');
   const [editing, setEditing] = useState<ProtocolTemplate | null>(null);
+  const [readOnly, setReadOnly] = useState(false);
   const [name, setName] = useState('');
   const [rules, setRules] = useState([emptyRule()]);
+  const [saveErrors, setSaveErrors] = useState<string[]>([]);
 
   const availableColumns = dataset?.columns.map((c) => c.name) ?? [];
   const isMarcus = activePersonaId === 'marcus';
 
   const openList = () => {
     setMode('list');
+    setSaveErrors([]);
     setOpen(true);
   };
 
   const openNew = () => {
     setEditing(null);
+    setReadOnly(false);
     setName('');
     setRules([emptyRule()]);
+    setSaveErrors([]);
     setMode('edit');
   };
 
-  const openEdit = (protocol: ProtocolTemplate) => {
+  const openEdit = (protocol: ProtocolTemplate, viewOnly = false) => {
     setEditing(protocol);
+    setReadOnly(viewOnly);
     setName(protocol.name);
     setRules(
       protocol.columnRules.length
@@ -65,35 +71,36 @@ export function ProtocolBuilder() {
           }))
         : [emptyRule()],
     );
+    setSaveErrors([]);
     setMode('edit');
   };
 
   const handleSave = () => {
     if (!name.trim()) return;
+    const errors: string[] = [];
     const filteredRules = rules.filter((r) => r.columnName.trim());
     for (const r of filteredRules) {
       for (const mr of r.variantMappingRules ?? []) {
         if (!mr.mapsTo.trim()) {
-          window.alert(`Maps-to value required for mapping rule on "${r.columnName}"`);
-          return;
+          errors.push(`Maps-to value required for mapping rule on "${r.columnName}"`);
         }
         if (!mr.variants.some((v) => v.trim())) {
-          window.alert(`At least one variant required for mapping rule on "${r.columnName}"`);
-          return;
+          errors.push(`At least one variant required for mapping rule on "${r.columnName}"`);
         }
       }
       for (const vr of r.variantRegexRules ?? []) {
         const err = validateRegexPattern(vr.pattern.trim());
-        if (err) {
-          window.alert(`Invalid regex on "${r.columnName}": ${err}`);
-          return;
-        }
+        if (err) errors.push(`Invalid regex on "${r.columnName}": ${err}`);
         if (!vr.mapsTo.trim()) {
-          window.alert(`Maps-to value required for regex on "${r.columnName}"`);
-          return;
+          errors.push(`Maps-to value required for regex on "${r.columnName}"`);
         }
       }
     }
+    if (errors.length) {
+      setSaveErrors(errors);
+      return;
+    }
+    setSaveErrors([]);
     const protocol = protocolFromForm(
       editing,
       name.trim(),
@@ -123,7 +130,7 @@ export function ProtocolBuilder() {
         title={
           isMarcus
             ? 'Create and edit assay protocol templates'
-            : 'Assay rules defined by Marcus — view and select'
+            : 'Assay rules defined by Marcus — view only'
         }
       >
         {isMarcus ? 'Manage protocols' : 'View protocols'}
@@ -135,16 +142,20 @@ export function ProtocolBuilder() {
         title={
           mode === 'list'
             ? 'Protocol Templates'
-            : editing
-              ? `Edit: ${editing.name}`
-              : 'New Protocol Template'
+            : readOnly
+              ? `View: ${editing?.name ?? name}`
+              : editing
+                ? `Edit: ${editing.name}`
+                : 'New Protocol Template'
         }
         wide
       >
         {mode === 'list' ? (
           <>
             <p className="mb-4 text-sm text-slate-600">
-              Define expected columns, types, and allowed values for assay protocols.
+              {isMarcus
+                ? 'Define expected columns, types, and allowed values for assay protocols.'
+                : 'Marcus defines these rules — review what your upload will be checked against.'}
             </p>
             <div className="space-y-2">
               {protocols.map((p) => (
@@ -159,24 +170,31 @@ export function ProtocolBuilder() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={() => openEdit(p)}>
-                      Edit
-                    </Button>
                     <Button
                       variant="secondary"
-                      onClick={() => cloneProtocol(p.id, `${p.name} (copy)`)}
+                      onClick={() => openEdit(p, !isMarcus)}
                     >
-                      Save as new version
+                      {isMarcus ? 'Edit' : 'View rules'}
                     </Button>
-                    <Button variant="ghost" onClick={() => deleteProtocol(p.id)}>
-                      Delete
-                    </Button>
+                    {isMarcus && (
+                      <>
+                        <Button
+                          variant="secondary"
+                          onClick={() => cloneProtocol(p.id, `${p.name} (copy)`)}
+                        >
+                          Save as new version
+                        </Button>
+                        <Button variant="ghost" onClick={() => deleteProtocol(p.id)}>
+                          Delete
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
             <div className="mt-4 flex justify-between">
-              <Button onClick={openNew}>+ New template</Button>
+              {isMarcus ? <Button onClick={openNew}>+ New template</Button> : <span />}
               <Button variant="ghost" onClick={() => setOpen(false)}>
                 Close
               </Button>
@@ -189,8 +207,9 @@ export function ProtocolBuilder() {
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                readOnly={readOnly}
                 placeholder="96-well viability screen v1"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-50"
               />
             </label>
 
@@ -199,8 +218,9 @@ export function ProtocolBuilder() {
                 key={index}
                 rule={rule}
                 availableColumns={availableColumns}
-                regexEditable={isMarcus}
-                mappingEditable
+                readOnly={readOnly}
+                regexEditable={isMarcus && !readOnly}
+                mappingEditable={isMarcus && !readOnly}
                 onChange={(updated) => {
                   const next = [...rules];
                   next[index] = updated;
@@ -210,15 +230,25 @@ export function ProtocolBuilder() {
               />
             ))}
 
-            <Button variant="secondary" onClick={() => setRules([...rules, emptyRule()])}>
-              + Add column rule
-            </Button>
+            {!readOnly && (
+              <Button variant="secondary" onClick={() => setRules([...rules, emptyRule()])}>
+                + Add column rule
+              </Button>
+            )}
+
+            {saveErrors.length > 0 && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                {saveErrors.map((err) => (
+                  <p key={err}>{err}</p>
+                ))}
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
               <Button variant="ghost" onClick={() => setMode('list')}>
                 Back
               </Button>
-              <Button onClick={handleSave}>Save template</Button>
+              {!readOnly && <Button onClick={handleSave}>Save template</Button>}
             </div>
           </div>
         )}

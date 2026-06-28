@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useBioBridgeStore } from './store/useBioBridgeStore';
 import { DropZone } from './components/upload/DropZone';
 import { ProtocolBuilder } from './components/protocol/ProtocolBuilder';
+import { ProtocolSelector } from './components/protocol/ProtocolSelector';
 import { PromoteToProtocolPrompt } from './components/protocol/PromoteToProtocolPrompt';
 import { Button } from './components/shared/Button';
 import { PersonaWelcomeBanner, PersonaUploadHint } from './components/shared/PersonaWelcome';
@@ -13,9 +15,17 @@ import { downloadTextFile } from './lib/utils';
 export default function App() {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const auditTrail = useBioBridgeStore((s) => s.auditTrail);
+  const anomalyFlags = useBioBridgeStore((s) => s.anomalyFlags);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
   const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
+
+  const unresolvedCount = useMemo(
+    () => anomalyFlags.filter((f) => !f.resolved).length,
+    [anomalyFlags],
+  );
+
+  const canExportHandoff = auditTrail.length > 0;
 
   return (
     <div className="min-h-svh bg-slate-100">
@@ -25,16 +35,32 @@ export default function App() {
             <h1 className="text-xl font-bold text-slate-900">BioBridge OS</h1>
             <p className="text-sm text-slate-500">
               {activePersonaId === 'elena'
-                ? 'Clean your data before you send · Demo mode'
-                : 'Protocol-aware pipeline review · Demo mode'}
+                ? 'Clean your data before you send'
+                : 'Protocol-aware pipeline review'}
+              {dataset && unresolvedCount > 0 && (
+                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                  {unresolvedCount} issue{unresolvedCount !== 1 ? 's' : ''} open
+                </span>
+              )}
+              {dataset && unresolvedCount === 0 && (
+                <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                  Ready to export
+                </span>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {dataset && <ProtocolSelector />}
             <ProtocolBuilder />
             {dataset && (
               <>
                 <Button
                   variant="secondary"
+                  title={
+                    unresolvedCount > 0
+                      ? `${unresolvedCount} unresolved issue(s) will remain in export`
+                      : undefined
+                  }
                   onClick={() =>
                     downloadTextFile(
                       datasetToCsv(dataset),
@@ -47,6 +73,12 @@ export default function App() {
                 </Button>
                 <Button
                   variant="secondary"
+                  disabled={!canExportHandoff}
+                  title={
+                    canExportHandoff
+                      ? undefined
+                      : 'Apply at least one fix to generate a handoff report'
+                  }
                   onClick={() => {
                     const protocol =
                       protocols.find((p) => p.id === activeProtocolId) ?? null;

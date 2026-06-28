@@ -8,9 +8,10 @@ import { useFlagSuggestion } from './useFlagSuggestion';
 
 interface NumericViolationChipProps {
   flag: AnomalyFlag;
+  hideAutoSuggestion?: boolean;
 }
 
-export function NumericViolationChip({ flag }: NumericViolationChipProps) {
+export function NumericViolationChip({ flag, hideAutoSuggestion = false }: NumericViolationChipProps) {
   const resolveFlag = useBioBridgeStore((s) => s.resolveFlag);
   const applySuggestion = useBioBridgeStore((s) => s.applySuggestion);
   const startInteraction = useBioBridgeStore((s) => s.startInteraction);
@@ -80,7 +81,7 @@ export function NumericViolationChip({ flag }: NumericViolationChipProps) {
         Found: {sampleValues.map(String).join(', ')}
       </p>
 
-      {suggestion && (
+      {suggestion && !hideAutoSuggestion && (
         <div className="mt-2 rounded border border-emerald-300 bg-emerald-50/80 p-2">
           <p className="text-sm font-medium text-emerald-900">Recommended: {suggestion.title}</p>
           <p className="text-xs text-emerald-800">{suggestion.description}</p>
@@ -88,6 +89,11 @@ export function NumericViolationChip({ flag }: NumericViolationChipProps) {
             Apply suggested fix
           </Button>
         </div>
+      )}
+      {suggestion && hideAutoSuggestion && suggestion.autoApplicable && (
+        <p className="mt-2 text-xs text-emerald-700">
+          Auto-fix available in Suggestions above.
+        </p>
       )}
 
       <div className="mt-2 flex flex-wrap gap-2">

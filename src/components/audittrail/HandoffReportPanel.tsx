@@ -9,6 +9,8 @@ export function HandoffReportPanel({ embedded = false }: { embedded?: boolean })
   const auditTrail = useBioBridgeStore((s) => s.auditTrail);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
+  const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
+  const isElena = activePersonaId === 'elena';
 
   const report = useMemo(() => {
     if (!dataset) return '';
@@ -23,10 +25,13 @@ export function HandoffReportPanel({ embedded = false }: { embedded?: boolean })
       <div className={`flex flex-wrap items-center justify-between gap-3 ${embedded ? 'mb-3' : ''}`}>
         {!embedded && (
           <div>
-            <h3 className="text-sm font-semibold text-slate-800">Handoff report for bench scientist</h3>
+            <h3 className="text-sm font-semibold text-slate-800">
+              {isElena ? 'Handoff summary for your comp-bio partner' : 'Handoff report for bench scientist'}
+            </h3>
             <p className="text-xs text-slate-500">
-              Plain-language summary of every change — send this back with your results so Elena sees
-              what happened to her data.
+              {isElena
+                ? 'Plain-language summary of every change — attach this when you send cleaned data downstream.'
+                : 'Plain-language summary of every change — send this back with your results so Elena sees what happened to her data.'}
             </p>
           </div>
         )}

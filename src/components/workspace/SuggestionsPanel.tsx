@@ -63,7 +63,15 @@ function SuggestionRow({
   );
 }
 
-export function SuggestionsPanel({ embedded = false }: { embedded?: boolean }) {
+export function SuggestionsPanel({
+  embedded = false,
+  onBulkComplete,
+  onDismiss,
+}: {
+  embedded?: boolean;
+  onBulkComplete?: () => void;
+  onDismiss?: () => void;
+}) {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const flags = useBioBridgeStore((s) => s.anomalyFlags);
   const protocols = useBioBridgeStore((s) => s.protocols);
@@ -120,6 +128,7 @@ export function SuggestionsPanel({ embedded = false }: { embedded?: boolean }) {
     if (applied > 0) {
       setBulkComplete({ applied });
       setExpanded(false);
+      onBulkComplete?.();
     }
   };
 
@@ -150,7 +159,13 @@ export function SuggestionsPanel({ embedded = false }: { embedded?: boolean }) {
                 Show remaining suggestions
               </Button>
             )}
-            <Button variant="ghost" onClick={() => setDismissed(true)}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setDismissed(true);
+                onDismiss?.();
+              }}
+            >
               Dismiss
             </Button>
           </div>
@@ -169,7 +184,14 @@ export function SuggestionsPanel({ embedded = false }: { embedded?: boolean }) {
           ✓ Applied {bulkComplete.applied} safe fix{bulkComplete.applied !== 1 ? 'es' : ''} — all
           automatic issues resolved
         </p>
-        <Button className="mt-2" variant="ghost" onClick={() => setDismissed(true)}>
+        <Button
+          className="mt-2"
+          variant="ghost"
+          onClick={() => {
+            setDismissed(true);
+            onDismiss?.();
+          }}
+        >
           Dismiss
         </Button>
       </div>
@@ -204,7 +226,13 @@ export function SuggestionsPanel({ embedded = false }: { embedded?: boolean }) {
               {isApplying ? 'Applying…' : `Apply all safe fixes (${autoCount})`}
             </Button>
           )}
-          <Button variant="ghost" onClick={() => setDismissed(true)}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setDismissed(true);
+              onDismiss?.();
+            }}
+          >
             Dismiss
           </Button>
         </div>

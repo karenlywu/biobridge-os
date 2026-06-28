@@ -1,5 +1,6 @@
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import { auditTrailToCsv } from '../../lib/audit/auditLogger';
+import { actionTypeLabel } from '../../lib/actionLabels';
 import { Button } from '../shared/Button';
 import { downloadTextFile } from '../../lib/utils';
 
@@ -58,7 +59,9 @@ export function AuditTrailPanel({ embedded = false }: { embedded?: boolean }) {
               {auditTrail.map((entry, i) => (
                 <tr key={entry.actionId} className="border-t border-slate-100">
                   <td className="px-3 py-2 text-slate-400">{i + 1}</td>
-                  <td className="px-3 py-2 font-mono text-slate-700">{entry.actionType}</td>
+                  <td className="px-3 py-2 text-slate-700" title={entry.actionType}>
+                    {actionTypeLabel(entry.actionType)}
+                  </td>
                   <td className="px-3 py-2 text-slate-700">{entry.target}</td>
                   <td className="px-3 py-2 text-slate-600">
                     {String(entry.beforeValue ?? '—')} → {String(entry.afterValue ?? '—')}
