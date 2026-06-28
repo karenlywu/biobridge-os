@@ -16,7 +16,7 @@ Open the local URL (usually `http://localhost:5173`).
 ## Live demo
 
 1. Load **⭐ Live demo (dirty handoff)** from the Demo Gallery on the upload screen.
-2. Follow the step-by-step script in [`docs/LIVE_DEMO_SCRIPT.md`](docs/LIVE_DEMO_SCRIPT.md).
+2. Use **Apply all safe fixes**, resolve remaining flags, then export cleaned CSV + handoff report.
 
 ## Scripts
 
@@ -34,7 +34,7 @@ Open the local URL (usually `http://localhost:5173`).
 - `src/lib/` — Parsing, detection, codegen, suggestions
 - `src/components/` — UI modules
 - `src/data/sampleDatasets/` — Bundled demo CSV/TSV/XLSX files
-- `docs/` — Live demo presenter script
+- `docs/` — Local-only docs (gitignored)
 
 ## License
 

@@ -183,7 +183,7 @@ export default function App() {
               Upload before you send — catch naming drift, missing replicates, and instrument error
               codes in plain language, not jargon.{' '}
               <span className="text-brand-600">
-                Live demo: load ⭐ Live demo (dirty handoff) — script in docs/LIVE_DEMO_SCRIPT.md
+                Live demo: load ⭐ Live demo (dirty handoff) from the gallery below.
               </span>
             </p>
             <DropZone />

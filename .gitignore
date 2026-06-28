@@ -52,3 +52,6 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
+
+# Internal presenter script (not for public repo)
+docs/LIVE_DEMO_SCRIPT.md

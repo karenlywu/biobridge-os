@@ -83,7 +83,7 @@ export const DEMO_FILES: DemoFileSpec[] = [
     highlights: [
       'Full handoff story in one file',
       'Regex + promote + auto-fix demo',
-      'See docs/LIVE_DEMO_SCRIPT.md',
+      'One-click Apply all safe fixes',
     ],
     suggestedProtocol: '96-well viability',
   },
