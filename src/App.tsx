@@ -8,7 +8,6 @@ import { ClusterCard } from './components/workspace/ClusterCard';
 import { NumericViolationChip } from './components/workspace/NumericViolationChip';
 import { JudgmentCallCard } from './components/workspace/JudgmentCallCard';
 import { MissingReplicateBanner } from './components/workspace/MissingReplicateBanner';
-import { AdvancedModeToggle } from './components/workspace/AdvancedModeToggle';
 import { PreFlightCheckCard } from './components/workspace/PreFlightCheckCard';
 import { SuggestionsPanel } from './components/workspace/SuggestionsPanel';
 import { ProtocolBuilder } from './components/protocol/ProtocolBuilder';
@@ -19,6 +18,9 @@ import { AuditTrailPanel } from './components/audittrail/AuditTrailPanel';
 import { CostOfCleaningSummary } from './components/audittrail/CostOfCleaningSummary';
 import { HandoffReportPanel } from './components/audittrail/HandoffReportPanel';
 import { Button } from './components/shared/Button';
+import { AdvancedModeToggle } from './components/workspace/AdvancedModeToggle';
+import { PersonaWelcomeBanner, PersonaUploadHint } from './components/shared/PersonaWelcome';
+import { UserSessionBadge } from './components/shared/UserSessionBadge';
 import type { AnomalyType } from './types/anomaly';
 import { datasetToCsv } from './lib/codegen/generatePythonScript';
 import { generateHandoffReport } from './lib/handoff/generateHandoffReport';
@@ -28,6 +30,8 @@ function CleaningStudio() {
   const anomalyFlags = useBioBridgeStore((s) => s.anomalyFlags);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
+  const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
+  const currentActor = useBioBridgeStore((s) => s.currentActor);
   const resolveFlag = useBioBridgeStore((s) => s.resolveFlag);
   const [filter, setFilter] = useState<AnomalyType | 'all'>('all');
   const [showTechnical, setShowTechnical] = useState(false);
@@ -72,7 +76,7 @@ function CleaningStudio() {
             />
             Show technical terms
           </label>
-          <AdvancedModeToggle />
+          {activePersonaId === 'marcus' && <AdvancedModeToggle />}
         </div>
       </div>
 
@@ -87,7 +91,7 @@ function CleaningStudio() {
               beforeValues: [],
               afterValue: null,
               reason: 'Acknowledged missing replicates',
-              actor: 'Dr. Elena Vance',
+              actor: currentActor,
               timestampStart: new Date().toISOString(),
               timestampEnd: new Date().toISOString(),
             })
@@ -128,18 +132,21 @@ export default function App() {
   const auditTrail = useBioBridgeStore((s) => s.auditTrail);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
+  const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
 
   return (
     <div className="min-h-svh bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-6">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 lg:px-6">
           <div>
             <h1 className="text-xl font-bold text-slate-900">BioBridge OS</h1>
             <p className="text-sm text-slate-500">
-              v4.0 · Demo mode · Closes the wet-lab ↔ comp-bio handoff gap
+              {activePersonaId === 'elena'
+                ? 'Clean your data before you send · Demo mode'
+                : 'Protocol-aware pipeline review · Demo mode'}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <ProtocolBuilder />
             {dataset && (
               <>
@@ -171,6 +178,7 @@ export default function App() {
                 </Button>
               </>
             )}
+            <UserSessionBadge />
           </div>
         </div>
       </header>
@@ -178,14 +186,11 @@ export default function App() {
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 lg:px-6">
         {!dataset ? (
           <section>
-            <h2 className="mb-2 text-lg font-semibold text-slate-800">Upload lab data</h2>
-            <p className="mb-4 text-sm text-slate-600">
-              Upload before you send — catch naming drift, missing replicates, and instrument error
-              codes in plain language, not jargon.{' '}
-              <span className="text-brand-600">
-                Live demo: load ⭐ Live demo (dirty handoff) from the gallery below.
-              </span>
-            </p>
+            <PersonaWelcomeBanner />
+            <h2 className="mb-2 text-lg font-semibold text-slate-800">
+              {activePersonaId === 'elena' ? 'Upload lab data' : 'Review lab export'}
+            </h2>
+            <PersonaUploadHint />
             <DropZone />
           </section>
         ) : (

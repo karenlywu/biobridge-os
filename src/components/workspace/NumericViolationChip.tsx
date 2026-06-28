@@ -1,7 +1,7 @@
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import type { AnomalyFlag } from '../../types/anomaly';
 import { ANOMALY_PLAIN_LANGUAGE, getColumnUnits } from '../../lib/anomalyLabels';
-import { generateId, DEFAULT_ACTOR } from '../../lib/utils';
+import { generateId } from '../../lib/utils';
 import { Button } from '../shared/Button';
 import { Chip } from '../shared/Chip';
 import { useFlagSuggestion } from './useFlagSuggestion';
@@ -17,6 +17,7 @@ export function NumericViolationChip({ flag }: NumericViolationChipProps) {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
+  const currentActor = useBioBridgeStore((s) => s.currentActor);
   const suggestion = useFlagSuggestion(flag);
 
   if (flag.resolved || !dataset) return null;
@@ -39,7 +40,7 @@ export function NumericViolationChip({ flag }: NumericViolationChipProps) {
       beforeValues: sampleValues,
       afterValue: value,
       reason,
-      actor: DEFAULT_ACTOR,
+      actor: currentActor,
       timestampStart: now,
       timestampEnd: now,
     });
@@ -55,7 +56,7 @@ export function NumericViolationChip({ flag }: NumericViolationChipProps) {
       beforeValues: sampleValues,
       afterValue: 'QC',
       reason,
-      actor: DEFAULT_ACTOR,
+      actor: currentActor,
       timestampStart: now,
       timestampEnd: now,
     });

@@ -48,5 +48,4 @@ export function downloadTextFile(content: string, filename: string, mimeType: st
 export const PREVIEW_ROW_LIMIT = 2000;
 export const LARGE_FILE_THRESHOLD = 50000;
 
-export const DEFAULT_ACTOR = 'Dr. Elena Vance';
-export const PROTOCOL_AUTHOR = 'Marcus Chen';
+export { DEFAULT_ACTOR, PROTOCOL_AUTHOR } from './session';

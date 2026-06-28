@@ -1,7 +1,7 @@
 import { useBioBridgeStore } from '../../store/useBioBridgeStore';
 import type { AnomalyFlag } from '../../types/anomaly';
 import { ANOMALY_PLAIN_LANGUAGE } from '../../lib/anomalyLabels';
-import { generateId, DEFAULT_ACTOR } from '../../lib/utils';
+import { generateId } from '../../lib/utils';
 import { Button } from '../shared/Button';
 import { useFlagSuggestion } from './useFlagSuggestion';
 
@@ -21,6 +21,7 @@ export function JudgmentCallCard({ flag }: JudgmentCallCardProps) {
   const applySuggestion = useBioBridgeStore((s) => s.applySuggestion);
   const startInteraction = useBioBridgeStore((s) => s.startInteraction);
   const suggestion = useFlagSuggestion(flag);
+  const currentActor = useBioBridgeStore((s) => s.currentActor);
 
   if (flag.resolved || flag.type !== 'missing_value') return null;
 
@@ -41,7 +42,7 @@ export function JudgmentCallCard({ flag }: JudgmentCallCardProps) {
       beforeValues: [isAmbiguous ? ' ' : null],
       afterValue,
       reason,
-      actor: DEFAULT_ACTOR,
+      actor: currentActor,
       timestampStart: now,
       timestampEnd: now,
     });

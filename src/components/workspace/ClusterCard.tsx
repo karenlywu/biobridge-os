@@ -5,7 +5,7 @@ import {
   getColumnDescription,
   getColumnUnits,
 } from '../../lib/anomalyLabels';
-import { generateId, DEFAULT_ACTOR } from '../../lib/utils';
+import { generateId } from '../../lib/utils';
 import { Button } from '../shared/Button';
 import { Chip } from '../shared/Chip';
 import { mergeBeforeValues } from '../../lib/promotion';
@@ -24,6 +24,7 @@ export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
   const dataset = useBioBridgeStore((s) => s.dataset);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
+  const currentActor = useBioBridgeStore((s) => s.currentActor);
   const suggestion = useFlagSuggestion(flag);
 
   if (flag.resolved) return null;
@@ -53,7 +54,7 @@ export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
       reason: isSchema
         ? `These are the same condition — standardized to "${target}"`
         : `Same label spelled different ways — merged to "${target}"`,
-      actor: DEFAULT_ACTOR,
+      actor: currentActor,
       timestampStart: now,
       timestampEnd: now,
     });
@@ -111,7 +112,7 @@ export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
                 beforeValues,
                 afterValue: null,
                 reason: 'Removed invisible extra spaces',
-                actor: DEFAULT_ACTOR,
+                actor: currentActor,
                 timestampStart: now,
                 timestampEnd: now,
               });
@@ -155,7 +156,7 @@ export function ClusterCard({ flag, protocolName }: ClusterCardProps) {
                   beforeValues: variants.map(String),
                   afterValue: replacement,
                   reason: pattern,
-                  actor: DEFAULT_ACTOR,
+                  actor: currentActor,
                   timestampStart: now,
                   timestampEnd: now,
                 });

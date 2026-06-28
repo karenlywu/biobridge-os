@@ -10,6 +10,7 @@ export function PreFlightCheckCard() {
   const anomalyFlags = useBioBridgeStore((s) => s.anomalyFlags);
   const protocols = useBioBridgeStore((s) => s.protocols);
   const activeProtocolId = useBioBridgeStore((s) => s.activeProtocolId);
+  const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
 
   const summary = useMemo(() => {
     if (!dataset) return null;
@@ -54,8 +55,9 @@ export function PreFlightCheckCard() {
         Pre-flight check — {summary.total} issue{summary.total !== 1 ? 's' : ''} before you send
       </p>
       <p className="mt-1 text-sm text-amber-800">
-        Fix these now so Marcus doesn&apos;t have to Slack you back in three days. Plain-language
-        summary of what we found:
+        {activePersonaId === 'elena'
+          ? "Fix these now so Marcus doesn't have to Slack you back in three days. Plain-language summary of what we found:"
+          : 'Issues Elena would hit on first upload — schema vs heuristic breakdown:'}
       </p>
       <ul className="mt-3 space-y-1.5 text-sm text-amber-900">
         {(Object.entries(summary.byType) as [AnomalyType, number][]).map(([type, count]) => (

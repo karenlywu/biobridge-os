@@ -6,11 +6,13 @@ import type { CleaningAction } from '../types/action';
 import type { AuditEntry } from '../types/audit';
 import { detectAnomalies } from '../lib/detection/detectAnomalies';
 import { createAuditEntry } from '../lib/audit/auditLogger';
-import { generateId, DEFAULT_ACTOR } from '../lib/utils';
+import type { PersonaId } from '../lib/session';
+import { DEFAULT_PERSONA_ID, getPersona } from '../lib/session';
 import type { CleaningSuggestion } from '../types/suggestion';
 import { buildSuggestions } from '../lib/suggestions/buildSuggestions';
 import { derivePromotionPair } from '../lib/promotion';
 import { STARTER_PROTOCOLS } from '../data/starterProtocol';
+import { generateId } from '../lib/utils';
 
 import type { PendingPromotion } from '../types/promotion';
 
@@ -24,6 +26,7 @@ interface BioBridgeState {
   actionHistory: CleaningAction[];
   auditTrail: AuditEntry[];
   advancedModeEnabled: boolean;
+  activePersonaId: PersonaId;
   currentActor: string;
   pendingPromotion: PendingPromotion | null;
   lastInteractionStart: number | null;
@@ -35,6 +38,7 @@ interface BioBridgeState {
   dismissPromotion: () => void;
   resolveFlag: (flagId: string, action: CleaningAction) => void;
   toggleAdvancedMode: () => void;
+  setActivePersona: (personaId: PersonaId) => void;
   saveProtocol: (protocol: ProtocolTemplate) => void;
   cloneProtocol: (protocolId: string, newName: string) => void;
   deleteProtocol: (protocolId: string) => void;
@@ -83,7 +87,8 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
   actionHistory: [],
   auditTrail: [],
   advancedModeEnabled: false,
-  currentActor: DEFAULT_ACTOR,
+  activePersonaId: DEFAULT_PERSONA_ID,
+  currentActor: getPersona(DEFAULT_PERSONA_ID).displayName,
   pendingPromotion: null,
   lastInteractionStart: null,
 
@@ -220,6 +225,15 @@ export const useBioBridgeStore = create<BioBridgeState>((set, get) => ({
 
   toggleAdvancedMode: () =>
     set((s) => ({ advancedModeEnabled: !s.advancedModeEnabled })),
+
+  setActivePersona: (personaId) => {
+    const persona = getPersona(personaId);
+    set({
+      activePersonaId: personaId,
+      currentActor: persona.displayName,
+      ...(personaId === 'elena' ? { advancedModeEnabled: false } : {}),
+    });
+  },
 
   saveProtocol: (protocol) =>
     set((state) => {

@@ -12,6 +12,7 @@ import {
 
 export function ProtocolBuilder() {
   const protocols = useBioBridgeStore((s) => s.protocols);
+  const activePersonaId = useBioBridgeStore((s) => s.activePersonaId);
   const saveProtocol = useBioBridgeStore((s) => s.saveProtocol);
   const cloneProtocol = useBioBridgeStore((s) => s.cloneProtocol);
   const deleteProtocol = useBioBridgeStore((s) => s.deleteProtocol);
@@ -24,6 +25,7 @@ export function ProtocolBuilder() {
   const [rules, setRules] = useState([emptyRule()]);
 
   const availableColumns = dataset?.columns.map((c) => c.name) ?? [];
+  const isMarcus = activePersonaId === 'marcus';
 
   const openList = () => {
     setMode('list');
@@ -69,8 +71,16 @@ export function ProtocolBuilder() {
 
   return (
     <>
-      <Button variant="secondary" onClick={openList}>
-        Manage Protocols
+      <Button
+        variant="secondary"
+        onClick={openList}
+        title={
+          isMarcus
+            ? 'Create and edit assay protocol templates'
+            : 'Assay rules defined by Marcus — view and select'
+        }
+      >
+        {isMarcus ? 'Manage protocols' : 'View protocols'}
       </Button>
 
       <Modal
