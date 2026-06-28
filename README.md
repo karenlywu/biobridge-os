@@ -1,4 +1,5 @@
-# BioBridge OS v4.0
+# BioBridge OS : QBI Hackathon 2026 Project
+# Author: Karen Wu
 
 Bidirectional low-code data transformation for life sciences — clean messy wet-lab exports, generate reproducible Python scripts, and maintain a full audit trail.
 
