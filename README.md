@@ -13,10 +13,11 @@ npm run dev
 
 Open the local URL (usually `http://localhost:5173`).
 
-## Live demo
+## Demo details
 
-1. Load **⭐ Live demo (dirty handoff)** from the Demo Gallery on the upload screen.
-2. Use **Apply all safe fixes**, resolve remaining flags, then export cleaned CSV + handoff report.
+1. User set as Dr. Elena
+2. Pre-loaded "raw datasets" that need to be cleaned, so just select one.
+3. Protocols/schemas built as user Marcus
 
 ## Scripts
 
