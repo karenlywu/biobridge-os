@@ -9,6 +9,7 @@ import {
   emptyRule,
   protocolFromForm,
 } from './ColumnRuleEditor';
+import { validateRegexPattern } from '../../lib/protocol/regexRules';
 
 export function ProtocolBuilder() {
   const protocols = useBioBridgeStore((s) => s.protocols);
@@ -57,10 +58,32 @@ export function ProtocolBuilder() {
 
   const handleSave = () => {
     if (!name.trim()) return;
+    const filteredRules = rules.filter((r) => r.columnName.trim());
+    for (const r of filteredRules) {
+      for (const vr of r.variantRegexRules ?? []) {
+        const err = validateRegexPattern(vr.pattern.trim());
+        if (err) {
+          window.alert(`Invalid regex on "${r.columnName}": ${err}`);
+          return;
+        }
+        if (!vr.mapsTo.trim()) {
+          window.alert(`Maps-to value required for regex on "${r.columnName}"`);
+          return;
+        }
+      }
+    }
     const protocol = protocolFromForm(
       editing,
       name.trim(),
-      rules.filter((r) => r.columnName.trim()),
+      filteredRules.map((r) => ({
+        ...r,
+        variantRegexRules: r.variantRegexRules?.map((vr) => ({
+          ...vr,
+          pattern: vr.pattern.trim(),
+          mapsTo: vr.mapsTo.trim(),
+          label: vr.label?.trim() || undefined,
+        })),
+      })),
       PROTOCOL_AUTHOR,
     );
     if (!editing) protocol.id = generateId('protocol');
@@ -153,6 +176,7 @@ export function ProtocolBuilder() {
                 key={index}
                 rule={rule}
                 availableColumns={availableColumns}
+                regexEditable={isMarcus}
                 onChange={(updated) => {
                   const next = [...rules];
                   next[index] = updated;

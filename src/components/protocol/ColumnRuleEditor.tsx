@@ -10,16 +10,107 @@ interface ColumnRuleEditorProps {
   availableColumns: string[];
   onChange: (rule: ColumnRule) => void;
   onRemove: () => void;
+  /** When false, regex rules are view-only (Elena view mode). */
+  regexEditable?: boolean;
+}
+
+function RegexRuleRow({
+  rule,
+  onChange,
+  onRemove,
+  editable,
+}: {
+  rule: VariantRegexRule;
+  onChange: (updated: VariantRegexRule) => void;
+  onRemove: () => void;
+  editable: boolean;
+}) {
+  const [patternError, setPatternError] = useState<string | null>(null);
+
+  const handlePatternBlur = () => {
+    if (!rule.pattern.trim()) {
+      setPatternError('Pattern is required');
+      return;
+    }
+    setPatternError(validateRegexPattern(rule.pattern.trim()));
+  };
+
+  if (!editable) {
+    return (
+      <li className="flex flex-wrap items-center gap-2 rounded bg-white p-2 text-xs">
+        <code className="text-violet-700">/{rule.pattern}/i</code>
+        <span>→</span>
+        <Chip color="brand">{rule.mapsTo}</Chip>
+        {rule.label && <span className="text-slate-500">({rule.label})</span>}
+      </li>
+    );
+  }
+
+  return (
+    <li className="rounded bg-white p-2">
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <label className="text-xs text-slate-600">
+          Pattern
+          <input
+            placeholder="^ctrl(_\\w+)?$"
+            value={rule.pattern}
+            onChange={(e) => {
+              setPatternError(null);
+              onChange({ ...rule, pattern: e.target.value });
+            }}
+            onBlur={handlePatternBlur}
+            className={`mt-0.5 w-full rounded border px-2 py-1 font-mono text-sm ${
+              patternError ? 'border-red-400' : 'border-slate-300'
+            }`}
+          />
+        </label>
+        <label className="text-xs text-slate-600">
+          Maps to
+          <input
+            placeholder="Canonical value"
+            value={rule.mapsTo}
+            onChange={(e) => onChange({ ...rule, mapsTo: e.target.value })}
+            className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </label>
+        <label className="text-xs text-slate-600">
+          Label (optional)
+          <input
+            placeholder="Plain-language note"
+            value={rule.label ?? ''}
+            onChange={(e) =>
+              onChange({ ...rule, label: e.target.value || undefined })
+            }
+            className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </label>
+        <div className="flex items-end">
+          <Button variant="ghost" onClick={onRemove}>
+            Remove
+          </Button>
+        </div>
+      </div>
+      {patternError && <p className="mt-1 text-xs text-red-600">{patternError}</p>}
+      {rule.pattern.trim() && !patternError && (
+        <p className="mt-1 text-[10px] text-slate-400">
+          Preview: <code className="text-violet-600">/{rule.pattern.trim()}/i</code> →{' '}
+          {rule.mapsTo.trim() || '…'}
+        </p>
+      )}
+    </li>
+  );
 }
 
 function RegexRulesSection({
   rules,
   onChange,
   sampleValues,
+  editable,
 }: {
   rules: VariantRegexRule[];
   onChange: (rules: VariantRegexRule[]) => void;
   sampleValues: string[];
+  editable: boolean;
 }) {
   const [draft, setDraft] = useState<VariantRegexRule>({ pattern: '', mapsTo: '' });
   const [testInput, setTestInput] = useState(sampleValues.slice(0, 5).join(', '));
@@ -44,6 +135,16 @@ function RegexRulesSection({
     testInput.split(',').map((s) => s.trim()).filter(Boolean),
   );
 
+  const updateRule = (index: number, updated: VariantRegexRule) => {
+    const next = [...rules];
+    next[index] = updated;
+    onChange(next);
+  };
+
+  const removeRule = (index: number) => {
+    onChange(rules.filter((_, j) => j !== index));
+  };
+
   return (
     <div className="mt-3 rounded-lg border border-slate-300 bg-slate-50 p-3">
       <button
@@ -62,56 +163,62 @@ function RegexRulesSection({
       {expanded && (
         <>
           {rules.length > 0 && (
-            <ul className="mt-2 space-y-1 text-xs">
+            <ul className="mt-2 space-y-2">
               {rules.map((r, i) => (
-                <li key={i} className="flex flex-wrap items-center gap-2 rounded bg-white p-2">
-                  <code className="text-violet-700">/{r.pattern}/i</code>
-                  <span>→</span>
-                  <Chip color="brand">{r.mapsTo}</Chip>
-                  {r.label && <span className="text-slate-500">({r.label})</span>}
-                  <Button variant="ghost" onClick={() => onChange(rules.filter((_, j) => j !== i))}>
-                    Remove
-                  </Button>
-                </li>
+                <RegexRuleRow
+                  key={i}
+                  rule={r}
+                  editable={editable}
+                  onChange={(updated) => updateRule(i, updated)}
+                  onRemove={() => removeRule(i)}
+                />
               ))}
             </ul>
           )}
 
-          <div className="mt-2 flex flex-wrap gap-1">
-            {REGEX_PRESETS.map((p) => (
-              <Button
-                key={p.label}
-                variant="ghost"
-                onClick={() => onChange([...rules, p.rule])}
-              >
-                + {p.label}
-              </Button>
-            ))}
-          </div>
+          {editable && (
+            <>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {REGEX_PRESETS.map((p) => (
+                  <Button
+                    key={p.label}
+                    variant="ghost"
+                    onClick={() => onChange([...rules, p.rule])}
+                  >
+                    + {p.label}
+                  </Button>
+                ))}
+              </div>
 
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            <input
-              placeholder="Regex pattern"
-              value={draft.pattern}
-              onChange={(e) => setDraft({ ...draft, pattern: e.target.value })}
-              className="rounded border border-slate-300 px-2 py-1 text-sm font-mono"
-            />
-            <input
-              placeholder="Maps to (canonical)"
-              value={draft.mapsTo}
-              onChange={(e) => setDraft({ ...draft, mapsTo: e.target.value })}
-              className="rounded border border-slate-300 px-2 py-1 text-sm"
-            />
-            <input
-              placeholder="Label (optional)"
-              value={draft.label ?? ''}
-              onChange={(e) => setDraft({ ...draft, label: e.target.value || undefined })}
-              className="rounded border border-slate-300 px-2 py-1 text-sm"
-            />
-          </div>
-          <Button className="mt-2" variant="secondary" onClick={addRule}>
-            Add regex rule
-          </Button>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <input
+                  placeholder="Regex pattern"
+                  value={draft.pattern}
+                  onChange={(e) => setDraft({ ...draft, pattern: e.target.value })}
+                  className="rounded border border-slate-300 px-2 py-1 text-sm font-mono"
+                />
+                <input
+                  placeholder="Maps to (canonical)"
+                  value={draft.mapsTo}
+                  onChange={(e) => setDraft({ ...draft, mapsTo: e.target.value })}
+                  className="rounded border border-slate-300 px-2 py-1 text-sm"
+                />
+                <input
+                  placeholder="Label (optional)"
+                  value={draft.label ?? ''}
+                  onChange={(e) => setDraft({ ...draft, label: e.target.value || undefined })}
+                  className="rounded border border-slate-300 px-2 py-1 text-sm"
+                />
+              </div>
+              <Button className="mt-2" variant="secondary" onClick={addRule}>
+                Add regex rule
+              </Button>
+            </>
+          )}
+
+          {!editable && rules.length === 0 && (
+            <p className="mt-2 text-xs text-slate-500">No regex rules on this column.</p>
+          )}
 
           <div className="mt-3">
             <label className="text-xs text-slate-600">
@@ -147,6 +254,7 @@ export function ColumnRuleEditor({
   availableColumns,
   onChange,
   onRemove,
+  regexEditable = true,
 }: ColumnRuleEditorProps) {
   const sampleValues = rule.allowedValues ?? ['control', 'ctrl_r2', 'drug_a'];
 
@@ -235,6 +343,7 @@ export function ColumnRuleEditor({
             rules={rule.variantRegexRules ?? []}
             onChange={(variantRegexRules) => onChange({ ...rule, variantRegexRules })}
             sampleValues={sampleValues}
+            editable={regexEditable}
           />
         </>
       )}
