@@ -20,6 +20,9 @@ Open the local URL (usually `http://localhost:5173`).
 2. Pre-loaded "raw datasets" that need to be cleaned, so just select one.
 3. Protocols/schemas built as user Marcus
 
+Presentation Link [https://docs.google.com/presentation/d/1jPHlQJI7IIVcwO9qgl62BIoEkvmfkPd1g6i0JoyfREk/edit?usp=sharing]
+Proposal Link [https://docs.google.com/document/d/17S-wXvqItBxQKyTyLj03-HK4y1gndYG2bQ83QWtjwuc/edit?tab=t.0#heading=h.5wl0lvz9mtn3]
+
 ## Scripts
 
 | Command | Description |
