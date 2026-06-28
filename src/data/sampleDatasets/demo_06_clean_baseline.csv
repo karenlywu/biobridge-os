@@ -1,0 +1,10 @@
+Well_ID,Gene_Symbol,Treatment_Group,Replicate,Expression_Value,Viability_%
+A01,GAPDH,Control,1,12.4,98.2
+A02,GAPDH,Control,2,11.9,97.8
+A03,GAPDH,Control,3,12.1,98.0
+A04,GAPDH,Drug A,1,8.2,72.1
+A05,GAPDH,Drug A,2,8.5,73.4
+A06,GAPDH,Drug A,3,8.1,71.8
+A07,ACTB,Drug B,1,5.3,45.2
+A08,ACTB,Drug B,2,5.1,44.8
+A09,ACTB,Drug B,3,5.4,45.5

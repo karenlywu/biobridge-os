@@ -1,0 +1,19 @@
+Well_ID,Gene_Symbol,Treatment_Group,Replicate,Expression_Value,Viability_%,Batch,Notes
+A01,GAPDH,Control,1,12.4,98.2,Run_A,
+A02,GAPDH,control,2,11.9,97.8,Run_A,typed fast at bench
+A03,gapdh,ctrl_r2,1,12.1,98.0,Run_A,
+A04,GAPDH, CONTROL_REP1,2,12.0,97.5,Run_A,leading space
+A05,GAPDH,Drug A,1,8.2,72.1,Run_A,
+A06,GAPDH,drug_a,2,8.5,73.4,Run_A,underscore variant
+A07,GAPDH,Drug-A,3,8.1,71.8,Run_A,
+A08,ACTB,Drug B,1,5.3,45.2,Run_A,
+A09,actb,Drug B,3,5.4,45.5,Run_A,missing Rep 2 for ACTB×Drug B
+A10,GAPDH,Drug C,1,ND,55.1,Run_B,well looked off
+A11,GAPDH,Drug C,2,ERROR,54.8,Run_B,saturated
+A12,GAPDH,Drug C,3,6.9,55.3,Run_B,
+A13,GAPDH,vehicle,1,12.0,97.5,Run_B,Elena renamed control this week
+A14,GAPDH,Control,2,LOW_QUALITY,98.0,Run_B,
+A15,GAPDH,Drug A,1,N/A,72.0,Run_B,
+A16,GAPDH,Drug B,1,<LOD,44.0,Run_B,
+A17,GAPDH,ctrl_rep3,1,12.2,98.1,Run_B,novel variant — promote demo
+A18,GAPDH,Drug X,1,4.2,38.0,Run_B,not in protocol yet

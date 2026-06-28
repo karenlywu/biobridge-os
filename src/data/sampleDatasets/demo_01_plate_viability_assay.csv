@@ -1,0 +1,20 @@
+Well_ID,Gene_Symbol,Treatment_Group,Replicate,Expression_Value,Viability_%,Notes
+A01,GAPDH,Control,1,12.4,98.2,
+A02,GAPDH,Control,2,11.9,97.8,
+A03,gapdh,Control,3,12.1,98.0,
+A04,GAPDH,Drug A,1,8.2,72.1,
+A05,GAPDH,Drug A,2,8.5,73.4,
+A06,GAPDH,Drug A,3,8.1,71.8,
+A07,ACTB,Drug B,1,5.3,45.2,
+A08,ACTB,Drug B,3,5.4,45.5,
+A09,ACTB,Control,1,12.0,97.5,
+A10,actb,Drug C,1,ND,55.1,well looked contaminated
+A11,ACTB,Drug C,2,6.7,54.8,
+A12,ACTB,Drug C,3,6.9,55.3,
+A13,GAPDH, CONTROL_REP1,1,12.2,98.1,
+A14,GAPDH,Control,2,LOW_QUALITY,97.5,saturated detector
+A15,GAPDH,Drug A,1,N/A,72.0,
+A16,GAPDH,Drug B,1,<LOD,44.0,
+A17,GAPDH,Drug B,2,ERROR,43.5,pipetting error suspected
+A18,GAPDH,ctrl_r2,1,12.0,97.5,
+A19,GAPDH,Drug A,3,,71.0,blank readout

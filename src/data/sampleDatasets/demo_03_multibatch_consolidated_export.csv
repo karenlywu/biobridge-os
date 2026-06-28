@@ -1,0 +1,19 @@
+Sample_ID,Batch,Treatment_Group,Replicate,Expression_Value,Notes
+D1-B1,Day1,Ctrl,1,1.02,
+D1-B2,Day1,Ctrl,2,0.98,
+D1-B3,Day1,Ctrl,3,1.01,
+D2-B1,Day2,control,1,1.05,merged from Tuesday run
+D2-B2,Day2,control,2,0.99,
+D2-B3,Day2,control,3,1.03,
+D3-B1,Day3,CTRL,1,1.00,
+D3-B2,Day3,CTRL,2,0.97,
+D3-B3,Day3,CTRL,3,1.04,
+D4-B1,Day4,ctrl,1,1.01,
+D4-B2,Day4,ctrl,2,0.96,
+D4-B3,Day4,ctrl,3,0.99,
+D5-B1,Day5,Vehicle,1,1.02,renamed control this week
+D5-B2,Day5,Vehicle,2,0.98,
+D5-B3,Day5,Vehicle,3,1.00,
+D5-B4,Day5,Drug X,1,0.45,
+D5-B5,Day5,Drug X,2,0.42,
+D5-B6,Day5,Drug X,3,0.44,

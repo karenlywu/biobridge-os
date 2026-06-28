@@ -1,0 +1,9 @@
+Well_ID,Inducer,OD600,Replicate,Notes
+A01,IPTG 1mM,0.82,1,
+A02,IPTG 1mM,0.79,2,
+A03,IPTG_1mM,0.81,3,underscore variant
+A04,IPTG 1mM,0.78,1,
+A05,no inducer,0.12,2,
+A06,no_inducer,0.11,3,
+A07,IPTG 1mM,0.80,1,
+A08,IPTG_1mM,0.77,2,
